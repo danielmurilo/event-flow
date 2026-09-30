@@ -6,10 +6,11 @@ export function createLoginPage(): HTMLElement {
   container.className = 'auth-container';
 
   container.innerHTML = `
-    <div class="auth-card">
+    <main class="auth-card" aria-labelledby="login-title">
       <header class="auth-header">
-        <h1 class="brand-title">Event Flow</h1>
-        <p class="auth-subtitle">Gestão ágil e moderna de eventos</p>
+        <p class="brand-title">Event Flow</p>
+        <h1 class="auth-title" id="login-title">Acesse sua conta</h1>
+        <p class="auth-subtitle">Entre com seu e-mail e senha para continuar.</p>
       </header>
 
       <div id="login-feedback"></div>
@@ -17,32 +18,32 @@ export function createLoginPage(): HTMLElement {
       <form id="login-form" novalidate>
         <div class="form-group">
           <label for="email" class="form-label">E-mail</label>
-          <input 
-            type="email" 
-            id="email" 
-            name="email" 
-            class="form-input" 
-            placeholder="seu@email.com" 
-            required 
+          <input
+            type="email"
+            id="email"
+            name="email"
+            class="form-input"
+            placeholder="seu@email.com"
+            required
             autocomplete="email"
           />
         </div>
 
         <div class="form-group">
           <label for="password" class="form-label">Senha</label>
-          <input 
-            type="password" 
-            id="password" 
-            name="password" 
-            class="form-input" 
-            placeholder="••••••••" 
-            required 
+          <input
+            type="password"
+            id="password"
+            name="password"
+            class="form-input"
+            placeholder="••••••••"
+            required
             autocomplete="current-password"
           />
         </div>
 
-        <div style="text-align: right; margin-bottom: var(--spacing-md);">
-          <a href="/forgot-password" id="link-forgot-password" style="font-size: 0.85rem;">Esqueceu a senha?</a>
+        <div class="form-meta">
+          <a href="/forgot-password" id="link-forgot-password" class="auth-link">Esqueceu a senha?</a>
         </div>
 
         <button type="submit" id="btn-submit" class="btn btn-primary">
@@ -55,7 +56,7 @@ export function createLoginPage(): HTMLElement {
       </div>
 
       <button type="button" id="btn-google-login" class="btn btn-google">
-        <svg width="18" height="18" viewBox="0 0 24 24" style="margin-right: 8px;">
+        <svg class="google-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
           <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
           <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
           <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
@@ -64,11 +65,11 @@ export function createLoginPage(): HTMLElement {
         <span>Entrar com Google</span>
       </button>
 
-      <footer style="text-align: center; margin-top: var(--spacing-xl); font-size: 0.9rem;">
-        <span style="color: var(--color-on-surface-variant);">Não tem uma conta?</span>
-        <a href="/register" id="link-register" style="margin-left: 4px;">Cadastre-se</a>
+      <footer class="auth-footer">
+        <span>Não tem uma conta?</span>
+        <a href="/register" id="link-register" class="auth-link">Cadastre-se</a>
       </footer>
-    </div>
+    </main>
   `;
 
   const form = container.querySelector<HTMLFormElement>('#login-form')!;
@@ -77,36 +78,33 @@ export function createLoginPage(): HTMLElement {
   const submitBtn = container.querySelector<HTMLButtonElement>('#btn-submit')!;
   const googleBtn = container.querySelector<HTMLButtonElement>('#btn-google-login')!;
   const feedback = container.querySelector<HTMLDivElement>('#login-feedback')!;
-
   const linkRegister = container.querySelector<HTMLAnchorElement>('#link-register')!;
   const linkForgot = container.querySelector<HTMLAnchorElement>('#link-forgot-password')!;
 
-  linkRegister.addEventListener('click', (e) => {
-    e.preventDefault();
+  linkRegister.addEventListener('click', (event) => {
+    event.preventDefault();
     router.navigate('/register', true);
   });
 
-  linkForgot.addEventListener('click', (e) => {
-    e.preventDefault();
+  linkForgot.addEventListener('click', (event) => {
+    event.preventDefault();
     router.navigate('/forgot-password', true);
   });
 
   const setLoading = (loading: boolean) => {
     submitBtn.disabled = loading;
     googleBtn.disabled = loading;
-    if (loading) {
-      submitBtn.innerHTML = '<span class="spinner"></span> <span>Entrando...</span>';
-    } else {
-      submitBtn.innerHTML = '<span>Entrar</span>';
-    }
+    submitBtn.innerHTML = loading
+      ? '<span class="spinner" aria-hidden="true"></span><span>Entrando...</span>'
+      : '<span>Entrar</span>';
   };
 
-  const showError = (msg: string) => {
-    feedback.innerHTML = `<div class="alert alert-error" role="alert">${msg}</div>`;
+  const showError = (message: string) => {
+    feedback.innerHTML = `<div class="alert alert-error" role="alert">${message}</div>`;
   };
 
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault();
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
     feedback.innerHTML = '';
 
     const email = emailInput.value.trim();

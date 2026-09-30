@@ -1,4 +1,4 @@
-/* Tema Claro (Light Mode) */
+/* Tema claro — papéis de cor Material Design 3 */
 :root,
 [data-theme='light'] {
   --color-primary: #00639b;
@@ -21,7 +21,7 @@
   --color-error-container: #ffdad6;
   --color-on-error-container: #410002;
 
-  --color-background: #fdfcff;
+  --color-background: #f0f4f8;
   --color-on-background: #1a1c1e;
 
   --color-surface: #fdfcff;
@@ -31,12 +31,12 @@
 
   --color-outline: #74777f;
   --color-outline-variant: #c4c6d0;
-  
+
   --color-surface-container: #f0f4f8;
   --color-surface-container-high: #eaeef2;
 }
 
-/* Tema Escuro (Dark Mode) */
+/* Tema escuro — mesma hierarquia de superfície, sem alterar os papéis MD3 */
 [data-theme='dark'] {
   --color-primary: #92ccff;
   --color-on-primary: #003353;
@@ -61,7 +61,7 @@
   --color-background: #111416;
   --color-on-background: #e2e2e6;
 
-  --color-surface: #111416;
+  --color-surface: #1d2024;
   --color-on-surface: #e2e2e6;
   --color-surface-variant: #44474f;
   --color-on-surface-variant: #c4c6d0;

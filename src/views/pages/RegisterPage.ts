@@ -6,76 +6,79 @@ export function createRegisterPage(): HTMLElement {
   container.className = 'auth-container';
 
   container.innerHTML = `
-    <div class="auth-card">
+    <main class="auth-card" aria-labelledby="register-title">
       <header class="auth-header">
-        <h1 class="brand-title">Criar Conta</h1>
-        <p class="auth-subtitle">Junte-se ao Event Flow</p>
+        <p class="brand-title">Event Flow</p>
+        <h1 class="auth-title" id="register-title">Criar conta</h1>
+        <p class="auth-subtitle">Informe seus dados para criar sua conta.</p>
       </header>
 
       <div id="register-feedback"></div>
 
       <form id="register-form" novalidate>
         <div class="form-group">
-          <label for="name" class="form-label">Nome Completo</label>
-          <input 
-            type="text" 
-            id="name" 
-            name="name" 
-            class="form-input" 
-            placeholder="Seu nome" 
+          <label for="name" class="form-label">Nome</label>
+          <input
+            type="text"
+            id="name"
+            name="name"
+            class="form-input"
+            placeholder="Seu nome"
             autocomplete="name"
           />
         </div>
 
         <div class="form-group">
           <label for="email" class="form-label">E-mail</label>
-          <input 
-            type="email" 
-            id="email" 
-            name="email" 
-            class="form-input" 
-            placeholder="seu@email.com" 
-            required 
+          <input
+            type="email"
+            id="email"
+            name="email"
+            class="form-input"
+            placeholder="seu@email.com"
+            required
             autocomplete="email"
           />
         </div>
 
         <div class="form-group">
-          <label for="password" class="form-label">Senha (mínimo 6 caracteres)</label>
-          <input 
-            type="password" 
-            id="password" 
-            name="password" 
-            class="form-input" 
-            placeholder="••••••••" 
-            required 
+          <label for="password" class="form-label">Senha</label>
+          <input
+            type="password"
+            id="password"
+            name="password"
+            class="form-input"
+            placeholder="••••••••"
+            required
             autocomplete="new-password"
+            aria-describedby="password-help"
           />
+          <p class="form-help" id="password-help">Mínimo de 6 caracteres.</p>
         </div>
 
         <div class="form-group">
-          <label for="confirm-password" class="form-label">Confirmar Senha</label>
-          <input 
-            type="password" 
-            id="confirm-password" 
-            name="confirmPassword" 
-            class="form-input" 
-            placeholder="••••••••" 
-            required 
+          <label for="confirm-password" class="form-label">Confirmar senha</label>
+          <input
+            type="password"
+            id="confirm-password"
+            name="confirmPassword"
+            class="form-input"
+            placeholder="••••••••"
+            required
             autocomplete="new-password"
           />
         </div>
 
-        <button type="submit" id="btn-register-submit" class="btn btn-primary" style="margin-top: var(--spacing-sm);">
-          <span>Cadastrar</span>
+        <button type="submit" id="btn-register-submit" class="btn btn-primary">
+          <span>Criar conta</span>
         </button>
       </form>
 
-      <footer style="text-align: center; margin-top: var(--spacing-xl); font-size: 0.9rem;">
-        <span style="color: var(--color-on-surface-variant);">Já possui uma conta?</span>
-        <a href="/login" id="link-login" style="margin-left: 4px;">Fazer Login</a>
+      <footer class="auth-footer">
+        <span>Já tem uma conta?</span>
+        <a href="/login" id="link-login" class="auth-link">Entrar</a>
       </footer>
-    </div>
+    </main>
   `;
 
   const form = container.querySelector<HTMLFormElement>('#register-form')!;
@@ -87,24 +90,24 @@ export function createRegisterPage(): HTMLElement {
   const feedback = container.querySelector<HTMLDivElement>('#register-feedback')!;
   const linkLogin = container.querySelector<HTMLAnchorElement>('#link-login')!;
 
-  linkLogin.addEventListener('click', (e) => {
-    e.preventDefault();
+  linkLogin.addEventListener('click', (event) => {
+    event.preventDefault();
     router.navigate('/login', true);
   });
 
-  const showError = (msg: string) => {
-    feedback.innerHTML = `<div class="alert alert-error" role="alert">${msg}</div>`;
+  const showError = (message: string) => {
+    feedback.innerHTML = `<div class="alert alert-error" role="alert">${message}</div>`;
   };
 
   const setLoading = (loading: boolean) => {
     submitBtn.disabled = loading;
-    submitBtn.innerHTML = loading 
-      ? '<span class="spinner"></span> <span>Cadastrando...</span>' 
-      : '<span>Cadastrar</span>';
+    submitBtn.innerHTML = loading
+      ? '<span class="spinner" aria-hidden="true"></span><span>Criando conta...</span>'
+      : '<span>Criar conta</span>';
   };
 
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault();
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
     feedback.innerHTML = '';
 
     const name = nameInput.value.trim();
@@ -113,7 +116,7 @@ export function createRegisterPage(): HTMLElement {
     const confirmPassword = confirmPasswordInput.value;
 
     if (!email || !password || !confirmPassword) {
-      showError('Por favor, preencha todos os campos obrigatórios.');
+      showError('Preencha seu e-mail, senha e confirmação de senha.');
       return;
     }
 

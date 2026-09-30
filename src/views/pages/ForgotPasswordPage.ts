@@ -6,37 +6,38 @@ export function createForgotPasswordPage(): HTMLElement {
   container.className = 'auth-container';
 
   container.innerHTML = `
-    <div class="auth-card">
+    <main class="auth-card auth-card--compact" aria-labelledby="forgot-title">
       <header class="auth-header">
-        <h1 class="brand-title">Recuperar Senha</h1>
-        <p class="auth-subtitle">Informe seu e-mail para receber as instruções</p>
+        <p class="brand-title">Event Flow</p>
+        <h1 class="auth-title" id="forgot-title">Recuperar senha</h1>
+        <p class="auth-subtitle">Informe o e-mail da sua conta para receber as instruções.</p>
       </header>
 
       <div id="forgot-feedback"></div>
 
       <form id="forgot-form" novalidate>
         <div class="form-group">
-          <label for="email" class="form-label">E-mail Cadastrado</label>
-          <input 
-            type="email" 
-            id="email" 
-            name="email" 
-            class="form-input" 
-            placeholder="seu@email.com" 
-            required 
+          <label for="email" class="form-label">E-mail</label>
+          <input
+            type="email"
+            id="email"
+            name="email"
+            class="form-input"
+            placeholder="seu@email.com"
+            required
             autocomplete="email"
           />
         </div>
 
-        <button type="submit" id="btn-forgot-submit" class="btn btn-primary" style="margin-top: var(--spacing-sm);">
-          <span>Enviar Instruções</span>
+        <button type="submit" id="btn-forgot-submit" class="btn btn-primary">
+          <span>Enviar instruções</span>
         </button>
       </form>
 
-      <footer style="text-align: center; margin-top: var(--spacing-xl); font-size: 0.9rem;">
-        <a href="/login" id="link-back-login">Voltar ao Login</a>
+      <footer class="auth-footer">
+        <a href="/login" id="link-back-login" class="auth-link">Voltar ao login</a>
       </footer>
-    </div>
+    </main>
   `;
 
   const form = container.querySelector<HTMLFormElement>('#forgot-form')!;
@@ -45,33 +46,41 @@ export function createForgotPasswordPage(): HTMLElement {
   const feedback = container.querySelector<HTMLDivElement>('#forgot-feedback')!;
   const backLink = container.querySelector<HTMLAnchorElement>('#link-back-login')!;
 
-  backLink.addEventListener('click', (e) => {
-    e.preventDefault();
+  backLink.addEventListener('click', (event) => {
+    event.preventDefault();
     router.navigate('/login', true);
   });
 
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault();
+  const showError = (message: string) => {
+    feedback.innerHTML = `<div class="alert alert-error" role="alert">${message}</div>`;
+  };
+
+  const setLoading = (loading: boolean) => {
+    submitBtn.disabled = loading;
+    submitBtn.innerHTML = loading
+      ? '<span class="spinner" aria-hidden="true"></span><span>Enviando...</span>'
+      : '<span>Enviar instruções</span>';
+  };
+
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
     feedback.innerHTML = '';
 
     const email = emailInput.value.trim();
     if (!email) {
-      feedback.innerHTML = '<div class="alert alert-error" role="alert">Por favor, informe seu e-mail.</div>';
+      showError('Informe o e-mail da sua conta.');
       return;
     }
 
-    submitBtn.disabled = true;
-    submitBtn.innerHTML = '<span class="spinner"></span> <span>Enviando...</span>';
-
+    setLoading(true);
     const result = await authController.forgotPassword(email);
-    submitBtn.disabled = false;
-    submitBtn.innerHTML = '<span>Enviar Instruções</span>';
+    setLoading(false);
 
     if (result.success) {
-      feedback.innerHTML = '<div class="alert alert-success" role="status">Instruções enviadas para seu e-mail com sucesso!</div>';
+      feedback.innerHTML = '<div class="alert alert-success" role="status">Instruções enviadas para seu e-mail.</div>';
       emailInput.value = '';
     } else if (result.error) {
-      feedback.innerHTML = `<div class="alert alert-error" role="alert">${result.error}</div>`;
+      showError(result.error);
     }
   });
 
