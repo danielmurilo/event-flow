@@ -12,7 +12,6 @@ export interface Ingredient {
   name: string;
   brand: string;
   measurement_unity: MeasurementUnit;
-  correction_factor: number; // FC (Fator de Correção) = Peso Bruto / Peso Líquido
   cost: number;
   total_yield_homemade_measure: string;
 }
@@ -21,6 +20,7 @@ export interface TechnicalSheetIngredient {
   ingredient_id: string;
   gross_weight: number;
   net_weight: number;
+  correction_factor?: number; // FC na Ficha Técnica (Peso Bruto / Peso Líquido)
   homemade_measure?: string;
   cost: number;
 }

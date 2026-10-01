@@ -109,7 +109,6 @@ describe('CRUD Administrativo - Repositórios & Formulários Firestore', () => {
               name: 'Filé Mignon',
               brand: 'Swift',
               measurement_unity: 'kg',
-              correction_factor: 1.25,
               cost: 75.0,
               total_yield_homemade_measure: '1 bife (180g)'
             })
@@ -120,7 +119,6 @@ describe('CRUD Administrativo - Repositórios & Formulários Firestore', () => {
       const list = await repo.listByTenant('tenant-buffet');
       expect(list).toHaveLength(1);
       expect(list[0].name).toBe('Filé Mignon');
-      expect(list[0].correction_factor).toBe(1.25);
       expect(list[0].cost).toBe(75.0);
     });
 
@@ -133,7 +131,6 @@ describe('CRUD Administrativo - Repositórios & Formulários Firestore', () => {
         name: 'Arroz Arbóreo',
         brand: 'La Pastina',
         measurement_unity: 'kg',
-        correction_factor: 1.0,
         cost: 25.0,
         total_yield_homemade_measure: '1 xícara'
       })).resolves.not.toThrow();
@@ -214,7 +211,7 @@ describe('CRUD Administrativo - Repositórios & Formulários Firestore', () => {
 
       const mockIngRepo = {
         listByTenant: vi.fn().mockResolvedValue([
-          { id: 'ing-del', tenantId: 'tenant-buffet', name: 'Alho Poró', brand: '', measurement_unity: 'kg', correction_factor: 1.1, cost: 12, total_yield_homemade_measure: '' }
+          { id: 'ing-del', tenantId: 'tenant-buffet', name: 'Alho Poró', brand: '', measurement_unity: 'kg', cost: 12, total_yield_homemade_measure: '' }
         ]),
         findById: vi.fn(),
         save: vi.fn(),
@@ -285,6 +282,434 @@ describe('CRUD Administrativo - Repositórios & Formulários Firestore', () => {
         })
       );
     });
+
+    it('deve permitir adicionar ingredientes na ficha técnica e calcular o custo total somado', async () => {
+      const mockCategoryRepo = {
+        listByTenant: vi.fn().mockResolvedValue([
+          { id: 'cat-01', tenantId: 'tenant-buffet', name: 'Pratos Principais' }
+        ]),
+        findById: vi.fn(),
+        save: vi.fn(),
+        delete: vi.fn()
+      };
+
+      const mockIngredientRepo = {
+        listByTenant: vi.fn().mockResolvedValue([
+          { id: 'ing-01', tenantId: 'tenant-buffet', name: 'Filé Mignon', measurement_unity: 'kg', cost: 80.0, total_yield_homemade_measure: '' },
+          { id: 'ing-02', tenantId: 'tenant-buffet', name: 'Azeite', measurement_unity: 'l', cost: 50.0, total_yield_homemade_measure: '' }
+        ]),
+        findById: vi.fn(),
+        save: vi.fn(),
+        delete: vi.fn()
+      };
+
+      const mockTechSheetRepo = {
+        listByTenant: vi.fn().mockResolvedValue([]),
+        findById: vi.fn(),
+        save: vi.fn().mockResolvedValue(undefined),
+        delete: vi.fn()
+      };
+
+      const page = createAdminCrudPage('/technical-sheets', {
+        category: mockCategoryRepo as any,
+        ingredient: mockIngredientRepo as any,
+        techSheet: mockTechSheetRepo as any
+      });
+      document.body.appendChild(page);
+
+      await new Promise(r => setTimeout(r, 20));
+
+      const btnOpen = page.querySelector<HTMLButtonElement>('#btn-open-create-modal')!;
+      btnOpen.click();
+
+      const inputName = page.querySelector<HTMLInputElement>('#input-sheet-name')!;
+      inputName.value = 'Mignon ao Roti Test';
+
+      const selectCat = page.querySelector<HTMLSelectElement>('#select-sheet-cat')!;
+      selectCat.value = 'cat-01';
+
+      // Clica em adicionar ingrediente
+      const btnAddIng = page.querySelector<HTMLButtonElement>('#btn-add-sheet-ingredient')!;
+      btnAddIng.click();
+
+      // Verifica que uma linha de ingrediente vazia foi inserida
+      let rows = page.querySelectorAll('.sheet-ing-row');
+      expect(rows.length).toBe(1);
+
+      // Seleciona o primeiro ingrediente como ing-01 (Filé Mignon: FC 1.25, custo 80.0)
+      const selectIng1 = rows[0].querySelector<HTMLInputElement>('.select-row-ing')!;
+      selectIng1.value = 'ing-01';
+      selectIng1.dispatchEvent(new window.Event('change'));
+      rows = page.querySelectorAll('.sheet-ing-row');
+
+      // Altera o peso líquido e peso bruto do primeiro ingrediente (ing-01: custo unitário 80.0)
+      const inputNet = rows[0].querySelector<HTMLInputElement>('.input-row-net')!;
+      inputNet.value = '2.0';
+      inputNet.dispatchEvent(new window.Event('input'));
+
+      const inputGross = rows[0].querySelector<HTMLInputElement>('.input-row-gross')!;
+      inputGross.value = '2.5';
+      inputGross.dispatchEvent(new window.Event('input'));
+
+      // FC calculado dinamicamente na ficha técnica (2.5 / 2.0 = 1.25)
+      const fcBadge = rows[0].querySelector<HTMLElement>('.row-fc-badge')!;
+      expect(fcBadge.textContent).toBe('FC: 1.25');
+
+      // Custo esperado: 2.5 * 80.0 = 200.00
+      expect(inputGross.value).toBe('2.5');
+
+      const inputCost = page.querySelector<HTMLInputElement>('#input-sheet-cost')!;
+      expect(inputCost.value).toBe('200.00');
+
+      // Adiciona o segundo ingrediente
+      btnAddIng.click();
+      rows = page.querySelectorAll('.sheet-ing-row');
+      expect(rows.length).toBe(2);
+
+      // Configura o segundo ingrediente como Azeite (ing-02)
+      const selectIng2 = rows[1].querySelector<HTMLSelectElement>('.select-row-ing')!;
+      selectIng2.value = 'ing-02';
+      selectIng2.dispatchEvent(new window.Event('change'));
+
+      const inputNet2 = rows[1].querySelector<HTMLInputElement>('.input-row-net')!;
+      inputNet2.value = '0.5';
+      inputNet2.dispatchEvent(new window.Event('input'));
+
+      // Custo do azeite: 0.5 * 50.0 = 25.00
+      // Custo total somado: 200.00 + 25.00 = 225.00
+      expect(inputCost.value).toBe('225.00');
+
+      // Submete a ficha técnica
+      const form = page.querySelector<HTMLFormElement>('#crud-form')!;
+      form.dispatchEvent(new window.Event('submit'));
+
+      await new Promise(r => setTimeout(r, 20));
+
+      expect(mockTechSheetRepo.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          tenantId: 'tenant-buffet',
+          name: 'Mignon ao Roti Test',
+          dish_category_id: 'cat-01',
+          ingredients: expect.arrayContaining([
+            expect.objectContaining({ ingredient_id: 'ing-01', gross_weight: 2.5, cost: 200 }),
+            expect.objectContaining({ ingredient_id: 'ing-02', gross_weight: 0.5, cost: 25 })
+          ]),
+          total_yield_cost: 225.00
+        })
+      );
+    });
+
+    it('deve permitir excluir ingrediente da receita e recalcular o custo total somado', async () => {
+      const mockCategoryRepo = {
+        listByTenant: vi.fn().mockResolvedValue([
+          { id: 'cat-01', tenantId: 'tenant-buffet', name: 'Entradas' }
+        ]),
+        findById: vi.fn(),
+        save: vi.fn(),
+        delete: vi.fn()
+      };
+
+      const mockIngredientRepo = {
+        listByTenant: vi.fn().mockResolvedValue([
+          { id: 'ing-01', tenantId: 'tenant-buffet', name: 'Filé Mignon', measurement_unity: 'kg', cost: 100.0, total_yield_homemade_measure: '' },
+          { id: 'ing-02', tenantId: 'tenant-buffet', name: 'Azeite', measurement_unity: 'l', cost: 50.0, total_yield_homemade_measure: '' }
+        ]),
+        findById: vi.fn(),
+        save: vi.fn(),
+        delete: vi.fn()
+      };
+
+      const initialSheet = {
+        id: 'ft-edit',
+        tenantId: 'tenant-buffet',
+        dish_category_id: 'cat-01',
+        name: 'Prato Exemplo',
+        total_yield: 10,
+        total_yield_measurement_unity: 'porções',
+        total_yield_weight: 2.0,
+        total_yield_cost: 150.0,
+        ingredients: [
+          { ingredient_id: 'ing-01', gross_weight: 1.0, net_weight: 1.0, cost: 100.0 },
+          { ingredient_id: 'ing-02', gross_weight: 1.0, net_weight: 1.0, cost: 50.0 }
+        ]
+      };
+
+      const mockTechSheetRepo = {
+        listByTenant: vi.fn().mockResolvedValue([initialSheet]),
+        findById: vi.fn(),
+        save: vi.fn().mockResolvedValue(undefined),
+        delete: vi.fn()
+      };
+
+      const page = createAdminCrudPage('/technical-sheets', {
+        category: mockCategoryRepo as any,
+        ingredient: mockIngredientRepo as any,
+        techSheet: mockTechSheetRepo as any
+      });
+      document.body.appendChild(page);
+
+      await new Promise(r => setTimeout(r, 20));
+
+      const btnEdit = page.querySelector<HTMLButtonElement>('.btn-edit')!;
+      btnEdit.click();
+
+      let rows = page.querySelectorAll('.sheet-ing-row');
+      expect(rows.length).toBe(2);
+
+      const inputCost = page.querySelector<HTMLInputElement>('#input-sheet-cost')!;
+      expect(inputCost.value).toBe('150.00');
+
+      // Exclui o segundo ingrediente
+      const btnRemoveSecond = rows[1].querySelector<HTMLButtonElement>('.btn-icon-delete-row')!;
+      btnRemoveSecond.click();
+
+      rows = page.querySelectorAll('.sheet-ing-row');
+      expect(rows.length).toBe(1);
+      expect(inputCost.value).toBe('100.00');
+
+      const form = page.querySelector<HTMLFormElement>('#crud-form')!;
+      form.dispatchEvent(new window.Event('submit'));
+
+      await new Promise(r => setTimeout(r, 20));
+
+      expect(mockTechSheetRepo.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: 'ft-edit',
+          total_yield_cost: 100.00,
+          ingredients: [
+            expect.objectContaining({ ingredient_id: 'ing-01', cost: 100 })
+          ]
+        })
+      );
+    });
+
+    it('deve filtrar os itens do catálogo no combobox de busca de ingrediente', async () => {
+      const mockCategoryRepo = {
+        listByTenant: vi.fn().mockResolvedValue([
+          { id: 'cat-01', tenantId: 'tenant-buffet', name: 'Entradas' }
+        ]),
+        findById: vi.fn(),
+        save: vi.fn(),
+        delete: vi.fn()
+      };
+
+      const mockIngredientRepo = {
+        listByTenant: vi.fn().mockResolvedValue([
+          { id: 'ing-01', tenantId: 'tenant-buffet', name: 'Filé Mignon Especial', brand: 'Swift', measurement_unity: 'kg', cost: 90.0, total_yield_homemade_measure: '' },
+          { id: 'ing-02', tenantId: 'tenant-buffet', name: 'Azeite Extra Virgem', brand: 'Gallo', measurement_unity: 'l', cost: 45.0, total_yield_homemade_measure: '' }
+        ]),
+        findById: vi.fn(),
+        save: vi.fn(),
+        delete: vi.fn()
+      };
+
+      const mockTechSheetRepo = {
+        listByTenant: vi.fn().mockResolvedValue([]),
+        findById: vi.fn(),
+        save: vi.fn(),
+        delete: vi.fn()
+      };
+
+      const page = createAdminCrudPage('/technical-sheets', {
+        category: mockCategoryRepo as any,
+        ingredient: mockIngredientRepo as any,
+        techSheet: mockTechSheetRepo as any
+      });
+      document.body.appendChild(page);
+
+      await new Promise(r => setTimeout(r, 20));
+
+      const btnOpen = page.querySelector<HTMLButtonElement>('#btn-open-create-modal')!;
+      btnOpen.click();
+
+      const btnAddIng = page.querySelector<HTMLButtonElement>('#btn-add-sheet-ingredient')!;
+      btnAddIng.click();
+
+      const searchInput = page.querySelector<HTMLInputElement>('.input-ing-search')!;
+      expect(searchInput).not.toBeNull();
+      // O campo de busca deve começar completamente vazio, sem pré-carregar nenhum ingrediente
+      expect(searchInput.value).toBe('');
+
+      // Digita no input de busca para filtrar
+      searchInput.value = 'Mignon';
+      searchInput.dispatchEvent(new window.Event('input'));
+
+      const dropdown = page.querySelector<HTMLElement>('.combobox-dropdown')!;
+      expect(dropdown.style.display).toBe('block');
+
+      const items = dropdown.querySelectorAll('.combobox-item');
+      expect(items.length).toBe(1);
+      expect(items[0].textContent).toContain('Filé Mignon Especial');
+
+      // Clica no item filtrado
+      (items[0] as HTMLElement).click();
+
+      // Verifica que o ingrediente selecionado foi vinculado
+      const hiddenInput = page.querySelector<HTMLInputElement>('.select-row-ing')!;
+      expect(hiddenInput.value).toBe('ing-01');
+    });
+
+    it('deve permitir cadastrar um novo ingrediente sob demanda diretamente do modal da ficha técnica', async () => {
+      const mockCategoryRepo = {
+        listByTenant: vi.fn().mockResolvedValue([
+          { id: 'cat-01', tenantId: 'tenant-buffet', name: 'Entradas' }
+        ]),
+        findById: vi.fn(),
+        save: vi.fn(),
+        delete: vi.fn()
+      };
+
+      const mockIngredientRepo = {
+        listByTenant: vi.fn().mockResolvedValue([
+          { id: 'ing-01', tenantId: 'tenant-buffet', name: 'Filé Mignon', measurement_unity: 'kg', cost: 80.0, total_yield_homemade_measure: '' }
+        ]),
+        findById: vi.fn(),
+        save: vi.fn().mockResolvedValue(undefined),
+        delete: vi.fn()
+      };
+
+      const mockTechSheetRepo = {
+        listByTenant: vi.fn().mockResolvedValue([]),
+        findById: vi.fn(),
+        save: vi.fn(),
+        delete: vi.fn()
+      };
+
+      const page = createAdminCrudPage('/technical-sheets', {
+        category: mockCategoryRepo as any,
+        ingredient: mockIngredientRepo as any,
+        techSheet: mockTechSheetRepo as any
+      });
+      document.body.appendChild(page);
+
+      await new Promise(r => setTimeout(r, 20));
+
+      const btnOpen = page.querySelector<HTMLButtonElement>('#btn-open-create-modal')!;
+      btnOpen.click();
+
+      // Abre inclusão de ingrediente
+      const btnAddIng = page.querySelector<HTMLButtonElement>('#btn-add-sheet-ingredient')!;
+      btnAddIng.click();
+
+      // Clica no botão de cadastrar novo insumo a partir da linha
+      const btnQuickAdd = page.querySelector<HTMLButtonElement>('.btn-combobox-quick-add')!;
+      expect(btnQuickAdd).not.toBeNull();
+      btnQuickAdd.click();
+
+      const quickModal = page.querySelector<HTMLElement>('#quick-ing-modal-overlay')!;
+      expect(quickModal.classList.contains('is-open')).toBe(true);
+
+      // Preenche os dados do novo ingrediente não existente no catálogo
+      const nameInp = page.querySelector<HTMLInputElement>('#quick-ing-name')!;
+      nameInp.value = 'Trufas Negras Frescas';
+      const brandInp = page.querySelector<HTMLInputElement>('#quick-ing-brand')!;
+      brandInp.value = 'Tartufi Rossi';
+      const unitSel = page.querySelector<HTMLSelectElement>('#quick-ing-unit')!;
+      unitSel.value = 'kg';
+      const costInp = page.querySelector<HTMLInputElement>('#quick-ing-cost')!;
+      costInp.value = '450.00';
+
+      const quickForm = page.querySelector<HTMLFormElement>('#quick-ing-form')!;
+      quickForm.dispatchEvent(new window.Event('submit'));
+
+      await new Promise(r => setTimeout(r, 20));
+
+      // Deve ter salvo no repositório com o tenantId correto
+      expect(mockIngredientRepo.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          tenantId: 'tenant-buffet',
+          name: 'Trufas Negras Frescas',
+          brand: 'Tartufi Rossi',
+          cost: 450.00
+        })
+      );
+
+      // O modal rápido deve ter fechado
+      expect(quickModal.classList.contains('is-open')).toBe(false);
+
+      // A linha na ficha técnica agora exibe o novo ingrediente
+      const searchInp = page.querySelector<HTMLInputElement>('.input-ing-search')!;
+      expect(searchInp.value).toContain('Trufas Negras Frescas');
+    });
+
+    it('deve carregar todos os ingredientes existentes ao abrir modal de editar ficha técnica', async () => {
+      const mockCategoryRepo = {
+        listByTenant: vi.fn().mockResolvedValue([
+          { id: 'cat-02', tenantId: 'tenant-buffet', name: 'Carnes Nobres' }
+        ]),
+        findById: vi.fn(),
+        save: vi.fn(),
+        delete: vi.fn()
+      };
+
+      const mockIngredientRepo = {
+        listByTenant: vi.fn().mockResolvedValue([
+          { id: 'ing-01', tenantId: 'tenant-buffet', name: 'Filé Mignon Limpo', brand: 'Swift', measurement_unity: 'kg', cost: 78.50, total_yield_homemade_measure: '' },
+          { id: 'ing-05', tenantId: 'tenant-buffet', name: 'Azeite de Oliva', brand: 'Gallo', measurement_unity: 'l', cost: 48.00, total_yield_homemade_measure: '' }
+        ]),
+        findById: vi.fn(),
+        save: vi.fn(),
+        delete: vi.fn()
+      };
+
+      const existingSheet = {
+        id: 'ft-001',
+        tenantId: 'tenant-buffet',
+        dish_category_id: 'cat-02',
+        name: 'Filé Mignon ao Molho Roti',
+        ingredients: [
+          { ingredient_id: 'ing-01', gross_weight: 2.0, net_weight: 1.6, homemade_measure: '10 medalhões', cost: 157.00 },
+          { ingredient_id: 'ing-05', gross_weight: 0.15, net_weight: 0.15, homemade_measure: '10 colheres', cost: 7.20 }
+        ],
+        preparation_method: ['Passo 1'],
+        total_yield: 10,
+        total_yield_measurement_unity: 'porções',
+        total_yield_weight: 2.2,
+        total_yield_cost: 164.20
+      };
+
+      const mockTechSheetRepo = {
+        listByTenant: vi.fn().mockResolvedValue([existingSheet]),
+        findById: vi.fn(),
+        save: vi.fn().mockResolvedValue(undefined),
+        delete: vi.fn()
+      };
+
+      const page = createAdminCrudPage('/technical-sheets', {
+        category: mockCategoryRepo as any,
+        ingredient: mockIngredientRepo as any,
+        techSheet: mockTechSheetRepo as any
+      });
+      document.body.appendChild(page);
+
+      await new Promise(r => setTimeout(r, 20));
+
+      // Clica em Editar na tabela
+      const btnEdit = page.querySelector<HTMLButtonElement>('.btn-edit')!;
+      expect(btnEdit).not.toBeNull();
+      btnEdit.click();
+
+      const modal = page.querySelector<HTMLElement>('#crud-modal-overlay')!;
+      expect(modal.classList.contains('is-open')).toBe(true);
+
+      // Verifica que as 2 linhas de ingredientes foram trazidas para o modal
+      const ingRows = page.querySelectorAll('.sheet-ing-row');
+      expect(ingRows.length).toBe(2);
+
+      // Verifica que os nomes dos ingredientes foram preenchidos nos inputs de busca
+      const searchInputs = page.querySelectorAll<HTMLInputElement>('.input-ing-search');
+      expect(searchInputs[0].value).toContain('Filé Mignon Limpo');
+      expect(searchInputs[1].value).toContain('Azeite de Oliva');
+
+      // Verifica pesos e custos de cada linha
+      const netInputs = page.querySelectorAll<HTMLInputElement>('.input-row-net');
+      expect(netInputs[0].value).toBe('1.6');
+      expect(netInputs[1].value).toBe('0.15');
+
+      const costTotalInput = page.querySelector<HTMLInputElement>('#input-sheet-cost')!;
+      expect(costTotalInput.value).toBe('164.20');
+    });
   });
 });
+
 

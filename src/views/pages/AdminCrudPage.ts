@@ -6,7 +6,7 @@ import { categoryRepository, ICategoryRepository } from '@/models/repositories/c
 import { ingredientRepository, IIngredientRepository } from '@/models/repositories/ingredientRepository';
 import { technicalSheetRepository, ITechnicalSheetRepository } from '@/models/repositories/technicalSheetRepository';
 import { dishRepository, IDishRepository } from '@/models/repositories/dishRepository';
-import { DishCategory, Ingredient, PreparationTechnicalSheet, Dish } from '@/models/types/recipe.types';
+import { DishCategory, Ingredient, TechnicalSheetIngredient, PreparationTechnicalSheet, Dish } from '@/models/types/recipe.types';
 
 export const INITIAL_CATEGORIES: DishCategory[] = [
   { id: 'cat-01', tenantId: 'default-tenant', name: 'Entradas & Finger Foods' },
@@ -17,11 +17,11 @@ export const INITIAL_CATEGORIES: DishCategory[] = [
 ];
 
 export const INITIAL_INGREDIENTS: Ingredient[] = [
-  { id: 'ing-01', tenantId: 'default-tenant', name: 'Filé Mignon Limpo', brand: 'Friboi Black / Swift', measurement_unity: 'kg', correction_factor: 1.25, cost: 78.50, total_yield_homemade_measure: '1 bife médio (180g)' },
-  { id: 'ing-02', tenantId: 'default-tenant', name: 'Arroz Arbóreo', brand: 'La Pastina', measurement_unity: 'kg', correction_factor: 1.00, cost: 24.90, total_yield_homemade_measure: '1 xícara (200g)' },
-  { id: 'ing-03', tenantId: 'default-tenant', name: 'Queijo Parmesão Grana Padano', brand: 'Importado', measurement_unity: 'kg', correction_factor: 1.02, cost: 145.00, total_yield_homemade_measure: '1 colher sopa (20g)' },
-  { id: 'ing-04', tenantId: 'default-tenant', name: 'Creme de Leite Fresco 35%', brand: 'Xandô', measurement_unity: 'l', correction_factor: 1.00, cost: 32.00, total_yield_homemade_measure: '1 xícara (240ml)' },
-  { id: 'ing-05', tenantId: 'default-tenant', name: 'Azeite de Oliva Extra Virgem', brand: 'Gallo / Andorinha', measurement_unity: 'l', correction_factor: 1.00, cost: 48.00, total_yield_homemade_measure: '1 colher sopa (15ml)' }
+  { id: 'ing-01', tenantId: 'default-tenant', name: 'Filé Mignon Limpo', brand: 'Friboi Black / Swift', measurement_unity: 'kg', cost: 78.50, total_yield_homemade_measure: '1 bife médio (180g)' },
+  { id: 'ing-02', tenantId: 'default-tenant', name: 'Arroz Arbóreo', brand: 'La Pastina', measurement_unity: 'kg', cost: 24.90, total_yield_homemade_measure: '1 xícara (200g)' },
+  { id: 'ing-03', tenantId: 'default-tenant', name: 'Queijo Parmesão Grana Padano', brand: 'Importado', measurement_unity: 'kg', cost: 145.00, total_yield_homemade_measure: '1 colher sopa (20g)' },
+  { id: 'ing-04', tenantId: 'default-tenant', name: 'Creme de Leite Fresco 35%', brand: 'Xandô', measurement_unity: 'l', cost: 32.00, total_yield_homemade_measure: '1 xícara (240ml)' },
+  { id: 'ing-05', tenantId: 'default-tenant', name: 'Azeite de Oliva Extra Virgem', brand: 'Gallo / Andorinha', measurement_unity: 'l', cost: 48.00, total_yield_homemade_measure: '1 colher sopa (15ml)' }
 ];
 
 export const INITIAL_TECHNICAL_SHEETS: PreparationTechnicalSheet[] = [
@@ -30,36 +30,48 @@ export const INITIAL_TECHNICAL_SHEETS: PreparationTechnicalSheet[] = [
     tenantId: 'default-tenant',
     dish_category_id: 'cat-02',
     name: 'Filé Mignon ao Molho Roti',
-    ingredients: [],
+    ingredients: [
+      { ingredient_id: 'ing-01', gross_weight: 2.0, net_weight: 1.6, homemade_measure: '10 medalhões (160g)', cost: 157.00 },
+      { ingredient_id: 'ing-05', gross_weight: 0.15, net_weight: 0.15, homemade_measure: '10 colheres sopa', cost: 7.20 },
+      { ingredient_id: 'ing-03', gross_weight: 0.14, net_weight: 0.137, homemade_measure: '7 colheres sopa', cost: 20.30 }
+    ],
     preparation_method: ['Selar os medalhões em fogo alto', 'Reduzir o caldo de ossos para o molho roti', 'Finalizar com manteiga gelada'],
     total_yield: 10,
     total_yield_measurement_unity: 'porções',
     total_yield_weight: 2.2,
-    total_yield_cost: 184.20
+    total_yield_cost: 184.50
   },
   {
     id: 'ft-002',
     tenantId: 'default-tenant',
     dish_category_id: 'cat-03',
     name: 'Risoto de Funghi Secchi',
-    ingredients: [],
+    ingredients: [
+      { ingredient_id: 'ing-02', gross_weight: 1.5, net_weight: 1.5, homemade_measure: '7.5 xícaras', cost: 37.35 },
+      { ingredient_id: 'ing-03', gross_weight: 0.3, net_weight: 0.294, homemade_measure: '15 colheres sopa', cost: 43.50 },
+      { ingredient_id: 'ing-05', gross_weight: 0.12, net_weight: 0.12, homemade_measure: '8 colheres sopa', cost: 5.76 },
+      { ingredient_id: 'ing-04', gross_weight: 0.31, net_weight: 0.31, homemade_measure: '1.3 xícaras', cost: 9.92 }
+    ],
     preparation_method: ['Hidratar o funghi em água morna', 'Refogar o arroz arbóreo e deglaçar com vinho branco', 'Adicionar caldo aos poucos até ponto al dente'],
     total_yield: 15,
     total_yield_measurement_unity: 'porções',
     total_yield_weight: 3.0,
-    total_yield_cost: 96.50
+    total_yield_cost: 96.53
   },
   {
     id: 'ft-003',
     tenantId: 'default-tenant',
     dish_category_id: 'cat-01',
     name: 'Bruschetta Tradizionale Caprese',
-    ingredients: [],
+    ingredients: [
+      { ingredient_id: 'ing-05', gross_weight: 0.25, net_weight: 0.25, homemade_measure: '16 colheres sopa', cost: 12.00 },
+      { ingredient_id: 'ing-03', gross_weight: 0.35, net_weight: 0.343, homemade_measure: '17 colheres sopa', cost: 50.75 }
+    ],
     preparation_method: ['Tostar fatias de pão italiano com azeite', 'Cobrir com tomates picados, manjericão e mozzarella di bufala'],
     total_yield: 40,
     total_yield_measurement_unity: 'unid',
     total_yield_weight: 1.8,
-    total_yield_cost: 62.80
+    total_yield_cost: 62.75
   }
 ];
 
@@ -330,6 +342,56 @@ export function createAdminCrudPage(
         </form>
       </div>
     </div>
+
+    <!-- MODAL RÁPIDO PARA INSERIR NOVO INGREDIENTE DIRETAMENTE NA FICHA TÉCNICA -->
+    <div id="quick-ing-modal-overlay" class="crud-modal-backdrop quick-modal-backdrop" aria-hidden="true">
+      <div class="crud-modal" style="max-width: 520px;" role="dialog" aria-modal="true" aria-labelledby="quick-ing-headline">
+        <div class="crud-modal-header">
+          <h3 id="quick-ing-headline" class="crud-modal-title">Novo Ingrediente no Catálogo</h3>
+          <button type="button" id="btn-close-quick-ing" class="icon-button" aria-label="Fechar janela">
+            ${ICONS.close}
+          </button>
+        </div>
+        <form id="quick-ing-form">
+          <div class="crud-modal-body">
+            <div class="form-group">
+              <label for="quick-ing-name" class="form-label">Nome do Ingrediente *</label>
+              <input type="text" id="quick-ing-name" class="form-control" required placeholder="Ex: Queijo Brie, Trufa Negra..." />
+            </div>
+            <div class="form-grid-2">
+              <div class="form-group">
+                <label for="quick-ing-brand" class="form-label">Marca / Fornecedor</label>
+                <input type="text" id="quick-ing-brand" class="form-control" placeholder="Ex: Tirolez, Scala..." />
+              </div>
+              <div class="form-group">
+                <label for="quick-ing-unit" class="form-label">Unidade de Medida *</label>
+                <select id="quick-ing-unit" class="form-control" required>
+                  <option value="kg">kg (Quilograma)</option>
+                  <option value="g">g (Grama)</option>
+                  <option value="l">l (Litro)</option>
+                  <option value="ml">ml (Mililitro)</option>
+                  <option value="unid">unid (Unidade)</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-grid-2">
+              <div class="form-group">
+                <label for="quick-ing-cost" class="form-label">Custo Unitário (R$) *</label>
+                <input type="number" step="0.01" min="0" id="quick-ing-cost" class="form-control" required placeholder="0.00" />
+              </div>
+              <div class="form-group">
+                <label for="quick-ing-homemade" class="form-label">Medida Caseira de Referência</label>
+                <input type="text" id="quick-ing-homemade" class="form-control" placeholder="Ex: 1 xícara (200g), 1 colher sopa..." />
+              </div>
+            </div>
+          </div>
+          <div class="crud-modal-footer">
+            <button type="button" id="btn-cancel-quick-ing" class="btn btn-outline">Cancelar</button>
+            <button type="submit" id="btn-save-quick-ing" class="btn btn-primary">Salvar e Usar na Ficha</button>
+          </div>
+        </form>
+      </div>
+    </div>
   `;
 
   const loadingEl = content.querySelector<HTMLElement>('#crud-loading')!;
@@ -348,10 +410,115 @@ export function createAdminCrudPage(
   const form = content.querySelector<HTMLFormElement>('#crud-form')!;
   const btnSubmit = content.querySelector<HTMLButtonElement>('#btn-save-record')!;
 
+  // Elementos do Modal Rápido de Ingrediente
+  const quickIngOverlay = content.querySelector<HTMLElement>('#quick-ing-modal-overlay')!;
+  const quickIngForm = content.querySelector<HTMLFormElement>('#quick-ing-form')!;
+  const btnCloseQuickIng = content.querySelector<HTMLButtonElement>('#btn-close-quick-ing')!;
+  const btnCancelQuickIng = content.querySelector<HTMLButtonElement>('#btn-cancel-quick-ing')!;
+  const quickIngNameInput = content.querySelector<HTMLInputElement>('#quick-ing-name')!;
+  const quickIngBrandInput = content.querySelector<HTMLInputElement>('#quick-ing-brand')!;
+  const quickIngUnitSelect = content.querySelector<HTMLSelectElement>('#quick-ing-unit')!;
+  const quickIngCostInput = content.querySelector<HTMLInputElement>('#quick-ing-cost')!;
+  const quickIngHomemadeInput = content.querySelector<HTMLInputElement>('#quick-ing-homemade')!;
+  const btnSaveQuickIng = content.querySelector<HTMLButtonElement>('#btn-save-quick-ing')!;
+
+  let activeQuickIngRowIndex: number | null = null;
+
+  const openQuickIngModal = (rowIndex: number | null, initialName = '') => {
+    activeQuickIngRowIndex = rowIndex;
+    quickIngNameInput.value = initialName;
+    quickIngBrandInput.value = '';
+    quickIngUnitSelect.value = 'kg';
+    quickIngCostInput.value = '';
+    quickIngHomemadeInput.value = '';
+    quickIngOverlay.classList.add('is-open');
+    quickIngOverlay.setAttribute('aria-hidden', 'false');
+    setTimeout(() => quickIngNameInput.focus(), 60);
+  };
+
+  const closeQuickIngModal = () => {
+    quickIngOverlay.classList.remove('is-open');
+    quickIngOverlay.setAttribute('aria-hidden', 'true');
+    activeQuickIngRowIndex = null;
+    quickIngForm.reset();
+  };
+
+  btnCloseQuickIng.addEventListener('click', closeQuickIngModal);
+  btnCancelQuickIng.addEventListener('click', closeQuickIngModal);
+  quickIngOverlay.addEventListener('click', (e) => {
+    if (e.target === quickIngOverlay) closeQuickIngModal();
+  });
+
   let currentItems: any[] = [];
   let editingId: string | null = null;
   let cachedCategories: DishCategory[] = [];
+  let cachedIngredients: Ingredient[] = [];
   let cachedTechSheets: PreparationTechnicalSheet[] = [];
+  let modalSheetIngredients: TechnicalSheetIngredient[] = [];
+  let refreshSheetIngredientsFn: (() => void) | null = null;
+  let updateCalculatedCostFn: (() => void) | null = null;
+
+  quickIngForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    btnSaveQuickIng.disabled = true;
+    btnSaveQuickIng.textContent = 'Salvando no Firestore...';
+    try {
+      const name = quickIngNameInput.value.trim();
+      if (!name) throw new Error('Nome do ingrediente é obrigatório.');
+
+      const newId = `ing-${Date.now().toString(36)}`;
+      const newIng: Ingredient = {
+        id: newId,
+        tenantId,
+        name,
+        brand: quickIngBrandInput.value.trim(),
+        measurement_unity: quickIngUnitSelect.value,
+        cost: parseNumber(quickIngCostInput.value, 0),
+        total_yield_homemade_measure: quickIngHomemadeInput.value.trim()
+      };
+
+      await ingRepo.save(newIng);
+      cachedIngredients.push(newIng);
+
+      if (activeQuickIngRowIndex !== null && modalSheetIngredients[activeQuickIngRowIndex]) {
+        const net = modalSheetIngredients[activeQuickIngRowIndex].net_weight || 1.0;
+        const gross = modalSheetIngredients[activeQuickIngRowIndex].gross_weight || net;
+        const fc = net > 0 ? Number((gross / net).toFixed(2)) : 1.0;
+        const cost = Number((gross * newIng.cost).toFixed(2));
+        modalSheetIngredients[activeQuickIngRowIndex].ingredient_id = newId;
+        modalSheetIngredients[activeQuickIngRowIndex].net_weight = net;
+        modalSheetIngredients[activeQuickIngRowIndex].gross_weight = gross;
+        modalSheetIngredients[activeQuickIngRowIndex].correction_factor = fc;
+        modalSheetIngredients[activeQuickIngRowIndex].cost = cost;
+      } else if (isTechSheet) {
+        const net = 1.0;
+        const gross = 1.0;
+        const cost = Number((gross * newIng.cost).toFixed(2));
+        modalSheetIngredients.push({
+          ingredient_id: newId,
+          net_weight: net,
+          gross_weight: gross,
+          correction_factor: 1.0,
+          homemade_measure: '',
+          cost
+        });
+      }
+
+      closeQuickIngModal();
+      if (refreshSheetIngredientsFn) refreshSheetIngredientsFn();
+      if (updateCalculatedCostFn) updateCalculatedCostFn();
+      if (isIngredient) {
+        loadData();
+      }
+
+      showToast(`✓ Insumo "${newIng.name}" cadastrado e adicionado à receita!`);
+    } catch (err: any) {
+      showToast(`Erro ao cadastrar ingrediente: ${err.message}`, true);
+    } finally {
+      btnSaveQuickIng.disabled = false;
+      btnSaveQuickIng.textContent = 'Salvar e Usar na Ficha';
+    }
+  });
 
   const openModal = () => {
     modalOverlay.classList.add('is-open');
@@ -361,7 +528,11 @@ export function createAdminCrudPage(
   const closeModal = () => {
     modalOverlay.classList.remove('is-open');
     modalOverlay.setAttribute('aria-hidden', 'true');
+    modalOverlay.querySelector('.crud-modal')?.classList.remove('crud-modal-lg');
     editingId = null;
+    modalSheetIngredients = [];
+    refreshSheetIngredientsFn = null;
+    updateCalculatedCostFn = null;
     form.reset();
   };
 
@@ -373,6 +544,7 @@ export function createAdminCrudPage(
 
   // RENDERIZADOR DE CAMPOS DO FORMULÁRIO BASEADO NA ENTIDADE
   const setupFormFields = (itemToEdit?: any) => {
+    modalOverlay.querySelector('.crud-modal')?.classList.remove('crud-modal-lg');
     const prefixNew = meta.feminine ? 'Nova' : 'Novo';
     modalTitle.textContent = itemToEdit ? `Editar ${meta.singular}` : `${prefixNew} ${meta.singular}`;
 
@@ -414,6 +586,7 @@ export function createAdminCrudPage(
               value="${itemToEdit?.brand || ''}"
             />
           </div>
+        <div class="form-grid-2">
           <div class="form-group">
             <label for="select-ing-unit" class="form-label">Unidade de Medida *</label>
             <select id="select-ing-unit" class="form-control" required>
@@ -423,21 +596,6 @@ export function createAdminCrudPage(
               <option value="ml" ${itemToEdit?.measurement_unity === 'ml' ? 'selected' : ''}>ml (Mililitro)</option>
               <option value="unid" ${itemToEdit?.measurement_unity === 'unid' ? 'selected' : ''}>unid (Unidade)</option>
             </select>
-          </div>
-        </div>
-        <div class="form-grid-2">
-          <div class="form-group">
-            <label for="input-ing-fc" class="form-label">Fator de Correção (FC) *</label>
-            <input
-              type="number"
-              step="0.01"
-              id="input-ing-fc"
-              class="form-control"
-              required
-              value="${itemToEdit?.correction_factor || '1.00'}"
-              title="FC = Peso Bruto / Peso Líquido (mínimo 1.0)"
-            />
-            <small class="text-muted">Peso Bruto / Peso Líquido</small>
           </div>
           <div class="form-group">
             <label for="input-ing-cost" class="form-label">Custo Unitário (R$) *</label>
@@ -464,6 +622,37 @@ export function createAdminCrudPage(
         </div>
       `;
     } else if (isTechSheet) {
+      modalOverlay.querySelector('.crud-modal')?.classList.add('crud-modal-lg');
+
+      let rawIngs = itemToEdit?.ingredients;
+      if (typeof rawIngs === 'string') {
+        try { rawIngs = JSON.parse(rawIngs); } catch {}
+      }
+      if (rawIngs && typeof rawIngs === 'object' && !Array.isArray(rawIngs)) {
+        rawIngs = Object.values(rawIngs);
+      }
+      if (Array.isArray(rawIngs) && rawIngs.length > 0) {
+        modalSheetIngredients = rawIngs.map((it: any) => ({
+          ingredient_id: it.ingredient_id || it.ingredientId || it.id || '',
+          gross_weight: parseNumber(it.gross_weight ?? it.grossWeight, 0),
+          net_weight: parseNumber(it.net_weight ?? it.netWeight, 0),
+          homemade_measure: it.homemade_measure || it.homemadeMeasure || '',
+          cost: parseNumber(it.cost, 0)
+        }));
+      } else if (itemToEdit) {
+        // Se a ficha técnica veio sem ingredientes (por exemplo, registros iniciais salvos no Firestore anteriormente)
+        const seedMatch = INITIAL_TECHNICAL_SHEETS.find(
+          s => s.id === itemToEdit.id || s.name.toLowerCase() === (itemToEdit.name || '').toLowerCase()
+        );
+        if (seedMatch && seedMatch.ingredients && seedMatch.ingredients.length > 0) {
+          modalSheetIngredients = seedMatch.ingredients.map(it => ({ ...it }));
+        } else {
+          modalSheetIngredients = [];
+        }
+      } else {
+        modalSheetIngredients = [];
+      }
+
       modalFields.innerHTML = `
         <div class="form-group">
           <label for="input-sheet-name" class="form-label">Nome da Preparação *</label>
@@ -495,6 +684,7 @@ export function createAdminCrudPage(
               id="input-sheet-yield"
               class="form-control"
               required
+              min="1"
               value="${itemToEdit?.total_yield || '10'}"
             />
           </div>
@@ -510,15 +700,53 @@ export function createAdminCrudPage(
             />
           </div>
         </div>
+
+        <!-- Seção de Ingredientes da Ficha Técnica -->
+        <div class="sheet-ingredients-section">
+          <div class="sheet-ingredients-header">
+            <div>
+              <h4>Ingredientes & Insumos da Receita *</h4>
+              <p class="text-muted" style="font-size: 0.8rem; margin: 0;">
+                Busque pelo nome do ingrediente ou cadastre novos insumos diretamente na receita.
+              </p>
+            </div>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+              <button type="button" id="btn-header-quick-add-ing" class="btn btn-outline btn-sm">
+                <span class="btn-icon">${ICONS.plus}</span> Novo Insumo no Catálogo
+              </button>
+              <button type="button" id="btn-add-sheet-ingredient" class="btn btn-primary btn-sm">
+                <span class="btn-icon">${ICONS.plus}</span> Adicionar Ingrediente
+              </button>
+            </div>
+          </div>
+
+          <div id="sheet-ingredients-container" class="sheet-ingredients-list"></div>
+
+          <div class="sheet-cost-summary-bar">
+            <div class="summary-col">
+              <span class="summary-label">Insumos na Ficha:</span>
+              <span id="summary-ing-count" class="summary-val"><strong>0</strong> itens</span>
+            </div>
+            <div class="summary-col">
+              <span class="summary-label">Custo por Porção / Unid:</span>
+              <span id="summary-cost-per-portion" class="summary-val"><strong>R$ 0,00</strong></span>
+            </div>
+            <div class="summary-col">
+              <span class="summary-label">Custo Total Calculado:</span>
+              <span id="summary-total-cost" class="summary-val highlight"><strong>R$ 0,00</strong></span>
+            </div>
+          </div>
+        </div>
+
         <div class="form-grid-2">
           <div class="form-group">
             <label for="input-sheet-weight" class="form-label">Peso Final Total (kg)</label>
             <input
               type="number"
-              step="0.1"
+              step="0.001"
               id="input-sheet-weight"
               class="form-control"
-              placeholder="Ex: 2.5"
+              placeholder="Ex: 2.2"
               value="${itemToEdit?.total_yield_weight || ''}"
             />
           </div>
@@ -529,21 +757,415 @@ export function createAdminCrudPage(
               step="0.01"
               id="input-sheet-cost"
               class="form-control"
-              placeholder="0.00"
-              value="${itemToEdit?.total_yield_cost || ''}"
+              readonly
+              style="background: var(--color-surface-container); font-weight: 600;"
+              value="${itemToEdit?.total_yield_cost ? itemToEdit.total_yield_cost.toFixed(2) : '0.00'}"
+              title="Calculado automaticamente pela soma dos custos dos ingredientes"
             />
           </div>
         </div>
+
         <div class="form-group">
           <label for="textarea-sheet-method" class="form-label">Modo de Preparo (um passo por linha)</label>
           <textarea
             id="textarea-sheet-method"
             class="form-control"
-            rows="4"
+            rows="3"
             placeholder="1. Selar os ingredientes...&#10;2. Cozinhar sob pressão...&#10;3. Finalizar e empratar."
           >${itemToEdit?.preparation_method ? itemToEdit.preparation_method.join('\n') : ''}</textarea>
         </div>
       `;
+
+      const updateCalculatedCost = () => {
+        const totalCost = Number(modalSheetIngredients.reduce((sum, item) => sum + (item.cost || 0), 0).toFixed(2));
+        const totalWeight = Number(modalSheetIngredients.reduce((sum, item) => sum + (item.gross_weight || item.net_weight || 0), 0).toFixed(3));
+
+        const costInput = modalFields.querySelector<HTMLInputElement>('#input-sheet-cost');
+        if (costInput) {
+          costInput.value = totalCost.toFixed(2);
+        }
+
+        const weightInput = modalFields.querySelector<HTMLInputElement>('#input-sheet-weight');
+        if (weightInput && (!weightInput.value || weightInput.value === '0')) {
+          if (totalWeight > 0) weightInput.value = totalWeight.toFixed(3);
+        }
+
+        const yieldInput = modalFields.querySelector<HTMLInputElement>('#input-sheet-yield');
+        const yieldVal = yieldInput ? parseNumber(yieldInput.value, 1) : 1;
+        const costPerPortion = yieldVal > 0 ? (totalCost / yieldVal) : 0;
+
+        const summaryCount = modalFields.querySelector<HTMLElement>('#summary-ing-count');
+        const summaryPerPortion = modalFields.querySelector<HTMLElement>('#summary-cost-per-portion');
+        const summaryTotal = modalFields.querySelector<HTMLElement>('#summary-total-cost');
+
+        if (summaryCount) {
+          summaryCount.innerHTML = `<strong>${modalSheetIngredients.length}</strong> ${modalSheetIngredients.length === 1 ? 'item' : 'itens'}`;
+        }
+        if (summaryPerPortion) {
+          summaryPerPortion.innerHTML = `<strong>R$ ${costPerPortion.toFixed(2)}</strong>`;
+        }
+        if (summaryTotal) {
+          summaryTotal.innerHTML = `<strong>R$ ${totalCost.toFixed(2)}</strong>`;
+        }
+      };
+
+      const selectIngredientForRow = (rowIndex: number, ingId: string) => {
+        if (!modalSheetIngredients[rowIndex]) return;
+        modalSheetIngredients[rowIndex].ingredient_id = ingId;
+        const targetIng = cachedIngredients.find(x => x.id === ingId) || INITIAL_INGREDIENTS.find(x => x.id === ingId);
+        if (targetIng) {
+          const net = modalSheetIngredients[rowIndex].net_weight || 1.0;
+          const gross = modalSheetIngredients[rowIndex].gross_weight || net;
+          const fc = net > 0 ? Number((gross / net).toFixed(2)) : 1.0;
+          const cost = Number((gross * (targetIng.cost || 0)).toFixed(2));
+          modalSheetIngredients[rowIndex].net_weight = net;
+          modalSheetIngredients[rowIndex].gross_weight = gross;
+          modalSheetIngredients[rowIndex].correction_factor = fc;
+          modalSheetIngredients[rowIndex].cost = cost;
+        }
+        renderSheetIngredients();
+        updateCalculatedCost();
+      };
+
+      const renderSheetIngredients = () => {
+        const container = modalFields.querySelector<HTMLElement>('#sheet-ingredients-container');
+        if (!container) return;
+
+        if (modalSheetIngredients.length === 0) {
+          container.innerHTML = `
+            <div class="empty-ingredients-notice">
+              <p>Nenhum ingrediente adicionado a esta ficha técnica.</p>
+              <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                <button type="button" id="btn-empty-quick-add" class="btn btn-outline btn-sm">
+                  <span class="btn-icon">${ICONS.plus}</span> Novo Insumo no Catálogo
+                </button>
+                <button type="button" id="btn-empty-add-ing" class="btn btn-primary btn-sm">
+                  <span class="btn-icon">${ICONS.plus}</span> Adicionar da Lista
+                </button>
+              </div>
+            </div>
+          `;
+          container.querySelector('#btn-empty-add-ing')?.addEventListener('click', addIngredientRow);
+          container.querySelector('#btn-empty-quick-add')?.addEventListener('click', () => openQuickIngModal(null, ''));
+          return;
+        }
+
+        container.innerHTML = modalSheetIngredients.map((item, i) => {
+          const ingId = item.ingredient_id || (item as any).ingredientId || (item as any).id || '';
+          const ing = cachedIngredients.find(x => x.id === ingId)
+            || cachedIngredients.find(x => x.name.toLowerCase() === ingId.toLowerCase())
+            || INITIAL_INGREDIENTS.find(x => x.id === ingId || x.name.toLowerCase() === ingId.toLowerCase());
+
+          if (ing && !cachedIngredients.some(c => c.id === ing.id)) {
+            cachedIngredients.push(ing);
+          }
+
+          const unit = ing ? ing.measurement_unity : ((item as any).unit || 'un');
+          const ingDisplay = ing
+            ? `${ing.name}${ing.brand ? ` (${ing.brand})` : ''}`
+            : ((item as any).name || (item as any).ingredient_name || ingId);
+
+          const net = item.net_weight !== undefined ? item.net_weight : 1.0;
+          const gross = item.gross_weight !== undefined ? item.gross_weight : net;
+          const fc = (net > 0 && gross > 0) ? Number((gross / net).toFixed(2)) : 1.0;
+
+          return `
+            <div class="sheet-ing-row" data-index="${i}">
+              <div class="sheet-ing-col-name">
+                <label class="form-label-xs">Ingrediente *</label>
+                <div class="searchable-combobox" data-index="${i}">
+                  <input type="hidden" class="select-row-ing" data-index="${i}" value="${item.ingredient_id || ''}" />
+                  <div class="combobox-input-wrapper">
+                    <input
+                      type="text"
+                      class="form-control form-control-sm input-ing-search"
+                      data-index="${i}"
+                      placeholder="Buscar ingrediente..."
+                      value="${ingDisplay}"
+                      autocomplete="off"
+                    />
+                    <button type="button" class="btn-combobox-toggle" data-index="${i}" tabindex="-1" title="Ver catálogo de ingredientes">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                    </button>
+                  </div>
+                  <div class="combobox-dropdown" data-index="${i}" style="display: none;">
+                    <div class="combobox-items-list"></div>
+                    <div class="combobox-footer">
+                      <button type="button" class="btn-combobox-quick-add" data-index="${i}">
+                        <span class="btn-icon">${ICONS.plus}</span> Cadastrar Novo Ingrediente
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="sheet-ing-col-net">
+                <label class="form-label-xs">Peso Líq. (${unit})</label>
+                <input
+                  type="number"
+                  step="0.001"
+                  min="0"
+                  class="form-control form-control-sm input-row-net"
+                  data-index="${i}"
+                  value="${item.net_weight !== undefined ? item.net_weight : ''}"
+                  placeholder="0.000"
+                />
+              </div>
+              <div class="sheet-ing-col-gross">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                  <label class="form-label-xs" style="margin: 0;">Peso Bruto (${unit})</label>
+                  <span class="row-fc-badge" title="Fator de Correção na Receita (Peso Bruto / Peso Líquido)">FC: ${fc.toFixed(2)}</span>
+                </div>
+                <input
+                  type="number"
+                  step="0.001"
+                  min="0"
+                  class="form-control form-control-sm input-row-gross"
+                  data-index="${i}"
+                  value="${item.gross_weight !== undefined ? item.gross_weight : ''}"
+                  placeholder="0.000"
+                />
+              </div>
+              <div class="sheet-ing-col-measure">
+                <label class="form-label-xs">Medida Caseira</label>
+                <input
+                  type="text"
+                  class="form-control form-control-sm input-row-measure"
+                  data-index="${i}"
+                  value="${item.homemade_measure || ''}"
+                  placeholder="Ex: 1 xícara"
+                />
+              </div>
+              <div class="sheet-ing-col-cost">
+                <label class="form-label-xs">Custo (R$)</label>
+                <input
+                  type="text"
+                  readonly
+                  class="form-control form-control-sm input-row-cost"
+                  data-index="${i}"
+                  value="R$ ${item.cost !== undefined ? item.cost.toFixed(2) : '0.00'}"
+                  style="background: var(--color-surface-container); font-weight: 600;"
+                />
+              </div>
+              <div class="sheet-ing-col-action">
+                <label class="form-label-xs">&nbsp;</label>
+                <button type="button" class="btn-icon-delete-row" data-index="${i}" title="Remover este ingrediente">
+                  ${ICONS.close}
+                </button>
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        const updateDropdownList = (dropdown: HTMLElement, query: string, rowIndex: number) => {
+          const listEl = dropdown.querySelector<HTMLElement>('.combobox-items-list')!;
+          const footerBtn = dropdown.querySelector<HTMLButtonElement>('.btn-combobox-quick-add')!;
+          const q = query.toLowerCase().trim();
+
+          const matches = cachedIngredients.filter(ci =>
+            !q ||
+            ci.name.toLowerCase().includes(q) ||
+            (ci.brand && ci.brand.toLowerCase().includes(q))
+          );
+
+          if (matches.length === 0) {
+            listEl.innerHTML = `<div class="combobox-empty">Nenhum ingrediente com "${query}".</div>`;
+          } else {
+            listEl.innerHTML = matches.map(ci => {
+              const isSelected = ci.id === modalSheetIngredients[rowIndex]?.ingredient_id;
+              return `
+                <div class="combobox-item ${isSelected ? 'selected' : ''}" data-id="${ci.id}">
+                  <div class="combobox-item-main">
+                    <span class="combobox-item-name">${ci.name}</span>
+                    ${ci.brand ? `<span class="combobox-item-brand">${ci.brand}</span>` : ''}
+                  </div>
+                  <div class="combobox-item-meta">
+                    <span class="badge-unit">${ci.measurement_unity}</span>
+                    <span class="badge-cost">R$ ${ci.cost.toFixed(2)}</span>
+                  </div>
+                </div>
+              `;
+            }).join('');
+          }
+
+          footerBtn.innerHTML = q
+            ? `<span class="btn-icon">${ICONS.plus}</span> Cadastrar "${query}" no Catálogo`
+            : `<span class="btn-icon">${ICONS.plus}</span> Cadastrar Novo Ingrediente`;
+
+          listEl.querySelectorAll<HTMLElement>('.combobox-item').forEach(itemEl => {
+            itemEl.addEventListener('click', (e) => {
+              e.stopPropagation();
+              const ingId = itemEl.getAttribute('data-id')!;
+              selectIngredientForRow(rowIndex, ingId);
+              dropdown.style.display = 'none';
+            });
+          });
+        };
+
+        const closeAllDropdowns = () => {
+          container.querySelectorAll<HTMLElement>('.combobox-dropdown').forEach(dd => {
+            dd.style.display = 'none';
+          });
+        };
+
+        container.querySelectorAll<HTMLInputElement>('.input-ing-search').forEach(searchInp => {
+          const rowIndex = Number(searchInp.getAttribute('data-index'));
+          const combobox = searchInp.closest('.searchable-combobox')!;
+          const dropdown = combobox.querySelector<HTMLElement>('.combobox-dropdown')!;
+
+          const openDropdown = () => {
+            closeAllDropdowns();
+            updateDropdownList(dropdown, searchInp.value, rowIndex);
+            dropdown.style.display = 'block';
+          };
+
+          searchInp.addEventListener('focus', openDropdown);
+          searchInp.addEventListener('input', () => {
+            updateDropdownList(dropdown, searchInp.value, rowIndex);
+            dropdown.style.display = 'block';
+          });
+
+          const toggleBtn = combobox.querySelector<HTMLButtonElement>('.btn-combobox-toggle')!;
+          toggleBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (dropdown.style.display === 'block') {
+              dropdown.style.display = 'none';
+            } else {
+              openDropdown();
+            }
+          });
+
+          const footerBtn = dropdown.querySelector<HTMLButtonElement>('.btn-combobox-quick-add')!;
+          footerBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            dropdown.style.display = 'none';
+            openQuickIngModal(rowIndex, searchInp.value);
+          });
+        });
+
+        // Suporte para atualização programática ou via testes no input hidden
+        container.querySelectorAll<HTMLInputElement>('.select-row-ing').forEach(hiddenInp => {
+          hiddenInp.addEventListener('change', (e) => {
+            const idx = Number((e.target as HTMLElement).getAttribute('data-index'));
+            const selectedId = (e.target as HTMLInputElement).value;
+            selectIngredientForRow(idx, selectedId);
+          });
+        });
+
+        const onDocumentClick = (e: MouseEvent) => {
+          if (!(e.target as HTMLElement).closest('.searchable-combobox')) {
+            closeAllDropdowns();
+          }
+        };
+        document.removeEventListener('click', (container as any)._onDocClick);
+        (container as any)._onDocClick = onDocumentClick;
+        document.addEventListener('click', onDocumentClick);
+
+        container.querySelectorAll<HTMLInputElement>('.input-row-net').forEach(inp => {
+          inp.addEventListener('input', (e) => {
+            const idx = Number((e.target as HTMLElement).getAttribute('data-index'));
+            const val = parseNumber((e.target as HTMLInputElement).value, 0);
+            modalSheetIngredients[idx].net_weight = val;
+            const targetIng = cachedIngredients.find(x => x.id === modalSheetIngredients[idx].ingredient_id) || INITIAL_INGREDIENTS.find(x => x.id === modalSheetIngredients[idx].ingredient_id);
+            const unitCost = targetIng ? targetIng.cost : 0;
+
+            const currentFc = modalSheetIngredients[idx].correction_factor || 1.0;
+            const gross = Number((val * currentFc).toFixed(3));
+            modalSheetIngredients[idx].gross_weight = gross;
+            modalSheetIngredients[idx].correction_factor = currentFc;
+            const cost = Number((gross * unitCost).toFixed(2));
+            modalSheetIngredients[idx].cost = cost;
+
+            const rowEl = container.querySelector(`.sheet-ing-row[data-index="${idx}"]`);
+            if (rowEl) {
+              const grossInp = rowEl.querySelector<HTMLInputElement>('.input-row-gross');
+              const costInp = rowEl.querySelector<HTMLInputElement>('.input-row-cost');
+              const fcBadge = rowEl.querySelector<HTMLElement>('.row-fc-badge');
+              if (grossInp) grossInp.value = String(gross);
+              if (costInp) costInp.value = `R$ ${cost.toFixed(2)}`;
+              if (fcBadge) fcBadge.textContent = `FC: ${currentFc.toFixed(2)}`;
+            }
+            updateCalculatedCost();
+          });
+        });
+
+        container.querySelectorAll<HTMLInputElement>('.input-row-gross').forEach(inp => {
+          inp.addEventListener('input', (e) => {
+            const idx = Number((e.target as HTMLElement).getAttribute('data-index'));
+            const val = parseNumber((e.target as HTMLInputElement).value, 0);
+            modalSheetIngredients[idx].gross_weight = val;
+            const targetIng = cachedIngredients.find(x => x.id === modalSheetIngredients[idx].ingredient_id) || INITIAL_INGREDIENTS.find(x => x.id === modalSheetIngredients[idx].ingredient_id);
+            const unitCost = targetIng ? targetIng.cost : 0;
+            const net = modalSheetIngredients[idx].net_weight || 0;
+            const fc = net > 0 ? Number((val / net).toFixed(2)) : 1.0;
+            modalSheetIngredients[idx].correction_factor = fc;
+            const cost = Number((val * unitCost).toFixed(2));
+            modalSheetIngredients[idx].cost = cost;
+
+            const rowEl = container.querySelector(`.sheet-ing-row[data-index="${idx}"]`);
+            if (rowEl) {
+              const costInp = rowEl.querySelector<HTMLInputElement>('.input-row-cost');
+              const fcBadge = rowEl.querySelector<HTMLElement>('.row-fc-badge');
+              if (costInp) costInp.value = `R$ ${cost.toFixed(2)}`;
+              if (fcBadge) fcBadge.textContent = `FC: ${fc.toFixed(2)}`;
+            }
+            updateCalculatedCost();
+          });
+        });
+
+        container.querySelectorAll<HTMLInputElement>('.input-row-measure').forEach(inp => {
+          inp.addEventListener('input', (e) => {
+            const idx = Number((e.target as HTMLElement).getAttribute('data-index'));
+            modalSheetIngredients[idx].homemade_measure = (e.target as HTMLInputElement).value;
+          });
+        });
+
+        container.querySelectorAll<HTMLButtonElement>('.btn-icon-delete-row').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            const target = (e.target as HTMLElement).closest('button');
+            const idx = Number(target?.getAttribute('data-index'));
+            if (!isNaN(idx)) {
+              modalSheetIngredients.splice(idx, 1);
+              renderSheetIngredients();
+              updateCalculatedCost();
+            }
+          });
+        });
+      };
+
+      const addIngredientRow = () => {
+        modalSheetIngredients.push({
+          ingredient_id: '',
+          net_weight: 1.0,
+          gross_weight: 0,
+          homemade_measure: '',
+          cost: 0
+        });
+
+        renderSheetIngredients();
+        updateCalculatedCost();
+
+        // Foca automaticamente no input de busca da nova linha para facilitar a digitação imediata
+        const newIndex = modalSheetIngredients.length - 1;
+        const newRow = modalFields.querySelector<HTMLElement>(`.sheet-ing-row[data-index="${newIndex}"]`);
+        if (newRow) {
+          const searchInput = newRow.querySelector<HTMLInputElement>('.input-ing-search');
+          if (searchInput) {
+            setTimeout(() => {
+              searchInput.focus();
+            }, 30);
+          }
+        }
+      };
+
+      modalFields.querySelector('#btn-header-quick-add-ing')?.addEventListener('click', () => openQuickIngModal(null, ''));
+      modalFields.querySelector('#btn-add-sheet-ingredient')?.addEventListener('click', addIngredientRow);
+      modalFields.querySelector('#input-sheet-yield')?.addEventListener('input', updateCalculatedCost);
+
+      refreshSheetIngredientsFn = renderSheetIngredients;
+      updateCalculatedCostFn = updateCalculatedCost;
+
+      renderSheetIngredients();
+      updateCalculatedCost();
     } else if (isDish) {
       modalFields.innerHTML = `
         <div class="form-group">
@@ -633,7 +1255,6 @@ export function createAdminCrudPage(
         const name = (content.querySelector<HTMLInputElement>('#input-ing-name')!).value.trim();
         const brand = (content.querySelector<HTMLInputElement>('#input-ing-brand')!).value.trim();
         const measurement_unity = (content.querySelector<HTMLSelectElement>('#select-ing-unit')!).value;
-        const correction_factor = parseNumber((content.querySelector<HTMLInputElement>('#input-ing-fc')!).value, 1.0);
         const cost = parseNumber((content.querySelector<HTMLInputElement>('#input-ing-cost')!).value, 0);
         const total_yield_homemade_measure = (content.querySelector<HTMLInputElement>('#input-ing-homemade')!).value.trim();
 
@@ -643,7 +1264,6 @@ export function createAdminCrudPage(
           name,
           brand,
           measurement_unity,
-          correction_factor,
           cost,
           total_yield_homemade_measure
         };
@@ -655,7 +1275,23 @@ export function createAdminCrudPage(
         const total_yield = parseNumber((content.querySelector<HTMLInputElement>('#input-sheet-yield')!).value, 1);
         const total_yield_measurement_unity = (content.querySelector<HTMLInputElement>('#input-sheet-yield-unit')!).value.trim() || 'porções';
         const total_yield_weight = parseNumber((content.querySelector<HTMLInputElement>('#input-sheet-weight')!).value, 0);
-        const total_yield_cost = parseNumber((content.querySelector<HTMLInputElement>('#input-sheet-cost')!).value, 0);
+
+        // Processa ingredientes da ficha técnica
+        const ingredients: TechnicalSheetIngredient[] = modalSheetIngredients
+          .filter(it => it.ingredient_id)
+          .map(it => ({
+            ingredient_id: it.ingredient_id,
+            gross_weight: parseNumber(it.gross_weight, 0),
+            net_weight: parseNumber(it.net_weight, 0),
+            homemade_measure: it.homemade_measure ? it.homemade_measure.trim() : '',
+            cost: parseNumber(it.cost, 0)
+          }));
+
+        // O Custo Calculado é a soma exata do cálculo de cada ingrediente
+        const total_yield_cost = Number(
+          ingredients.reduce((sum, it) => sum + (it.cost || 0), 0).toFixed(2)
+        );
+
         const methodText = (content.querySelector<HTMLTextAreaElement>('#textarea-sheet-method')!).value;
         const preparation_method = methodText.split('\n').map(l => l.trim()).filter(Boolean);
 
@@ -664,7 +1300,7 @@ export function createAdminCrudPage(
           tenantId: targetTenantId,
           name,
           dish_category_id,
-          ingredients: existing?.ingredients || [],
+          ingredients,
           preparation_method,
           total_yield,
           total_yield_measurement_unity,
@@ -767,7 +1403,6 @@ export function createAdminCrudPage(
           <th>Ingrediente</th>
           <th>Marca</th>
           <th>Unid</th>
-          <th>Fator Correção (FC)</th>
           <th>Custo Unitário</th>
           <th>Rendimento Caseiro</th>
           <th class="th-actions">Ações</th>
@@ -780,7 +1415,6 @@ export function createAdminCrudPage(
           <td><strong>${ing.name}</strong></td>
           <td>${ing.brand || '-'}</td>
           <td><span class="badge-neutral">${ing.measurement_unity}</span></td>
-          <td><code>${ing.correction_factor.toFixed(2)}</code></td>
           <td><strong>R$ ${ing.cost.toFixed(2)}</strong></td>
           <td><small>${ing.total_yield_homemade_measure || '-'}</small></td>
           <td class="td-actions">
@@ -816,6 +1450,7 @@ export function createAdminCrudPage(
           <th>Nome da Preparação</th>
           <th>Categoria</th>
           <th>Rendimento</th>
+          <th>Ingredientes</th>
           <th>Custo Calculado</th>
           <th class="th-actions">Ações</th>
         </tr>
@@ -824,6 +1459,10 @@ export function createAdminCrudPage(
       items.forEach((sheet: PreparationTechnicalSheet) => {
         const cat = cachedCategories.find(c => c.id === sheet.dish_category_id);
         const catName = cat ? cat.name : sheet.dish_category_id || 'Não vinculada';
+        const ingCount = sheet.ingredients?.length || 0;
+        const costPerUnit = sheet.total_yield && sheet.total_yield > 0
+          ? (sheet.total_yield_cost / sheet.total_yield)
+          : 0;
 
         const tr = document.createElement('tr');
         tr.innerHTML = `
@@ -831,16 +1470,32 @@ export function createAdminCrudPage(
           <td><strong>${sheet.name}</strong></td>
           <td><span class="category-tag">${catName}</span></td>
           <td>${sheet.total_yield} ${sheet.total_yield_measurement_unity}</td>
-          <td><strong>R$ ${sheet.total_yield_cost ? sheet.total_yield_cost.toFixed(2) : '0.00'}</strong></td>
+          <td>
+            <span class="category-tag" style="background: var(--color-surface-container); color: var(--color-on-surface);">
+              ${ingCount} ${ingCount === 1 ? 'insumo' : 'insumos'}
+            </span>
+          </td>
+          <td>
+            <strong>R$ ${sheet.total_yield_cost ? sheet.total_yield_cost.toFixed(2) : '0.00'}</strong>
+            <br>
+            <small class="text-muted">R$ ${costPerUnit.toFixed(2)} / ${sheet.total_yield_measurement_unity}</small>
+          </td>
           <td class="td-actions">
-            <button type="button" class="btn btn-ghost btn-sm btn-edit" data-id="${sheet.id}">Editar</button>
-            <button type="button" class="btn btn-ghost btn-sm btn-delete" data-id="${sheet.id}" style="color: var(--color-error);">Excluir</button>
+            <div class="table-actions-group">
+              <button type="button" class="btn-icon-action btn-edit" data-id="${sheet.id}" title="Editar Ficha Técnica" aria-label="Editar Ficha Técnica">
+                ${ICONS.pencil}
+              </button>
+              <button type="button" class="btn-icon-action btn-delete" data-id="${sheet.id}" title="Excluir Ficha Técnica" aria-label="Excluir Ficha Técnica">
+                ${ICONS.trash}
+              </button>
+            </div>
           </td>
         `;
 
         tr.querySelector('.btn-edit')?.addEventListener('click', () => {
-          editingId = sheet.id;
-          setupFormFields(sheet);
+          const sheetToEdit = currentItems.find(it => it.id === sheet.id) || sheet;
+          editingId = sheetToEdit.id;
+          setupFormFields(sheetToEdit);
           openModal();
         });
 
@@ -964,10 +1619,46 @@ export function createAdminCrudPage(
           cachedCategories = INITIAL_CATEGORIES.map(c => ({ ...c, tenantId }));
         }
 
+        let dbIngredients = await ingRepo.listByTenant(tenantId);
+        if (dbIngredients.length === 0) {
+          dbIngredients = INITIAL_INGREDIENTS.map(i => ({ ...i, tenantId }));
+          Promise.all(dbIngredients.map(i => ingRepo.save(i))).catch(() => {});
+        } else {
+          // Garante que os insumos base estejam disponíveis caso referenciados nas fichas
+          const existingIds = new Set(dbIngredients.map(i => i.id));
+          INITIAL_INGREDIENTS.forEach(initIng => {
+            if (!existingIds.has(initIng.id)) {
+              dbIngredients.push({ ...initIng, tenantId });
+            }
+          });
+        }
+        cachedIngredients = dbIngredients;
+
         let sheets = await sheetRepo.listByTenant(tenantId);
         if (sheets.length === 0) {
           sheets = INITIAL_TECHNICAL_SHEETS.map(s => ({ ...s, tenantId }));
           Promise.all(sheets.map(s => sheetRepo.save(s))).catch(() => {});
+        } else {
+          // Migração retroativa: Se as fichas técnicas no Firestore estão sem ingredientes
+          // (criadas antes da implementação do array de ingredientes), restaura da receita padrão e atualiza no Firestore
+          sheets = sheets.map(sheet => {
+            if (!sheet.ingredients || sheet.ingredients.length === 0) {
+              const seed = INITIAL_TECHNICAL_SHEETS.find(
+                s => s.id === sheet.id || s.name.toLowerCase() === sheet.name.toLowerCase()
+              );
+              if (seed && seed.ingredients && seed.ingredients.length > 0) {
+                const updated = {
+                  ...sheet,
+                  ingredients: seed.ingredients.map(it => ({ ...it })),
+                  total_yield_cost: seed.total_yield_cost,
+                  total_yield_weight: seed.total_yield_weight
+                };
+                sheetRepo.save(updated).catch(() => {});
+                return updated;
+              }
+            }
+            return sheet;
+          });
         }
         currentItems = sheets;
       } else if (isDish) {
@@ -991,7 +1682,11 @@ export function createAdminCrudPage(
       console.warn('Falha na consulta ao Firestore, usando dados locais de demonstração:', err);
       if (isCategory) currentItems = INITIAL_CATEGORIES.map(c => ({ ...c, tenantId }));
       if (isIngredient) currentItems = INITIAL_INGREDIENTS.map(i => ({ ...i, tenantId }));
-      if (isTechSheet) currentItems = INITIAL_TECHNICAL_SHEETS.map(s => ({ ...s, tenantId }));
+      if (isTechSheet) {
+        cachedCategories = INITIAL_CATEGORIES.map(c => ({ ...c, tenantId }));
+        cachedIngredients = INITIAL_INGREDIENTS.map(i => ({ ...i, tenantId }));
+        currentItems = INITIAL_TECHNICAL_SHEETS.map(s => ({ ...s, tenantId }));
+      }
       if (isDish) currentItems = INITIAL_DISHES.map(d => ({ ...d, tenantId }));
       loadingEl.style.display = 'none';
       filterTable();

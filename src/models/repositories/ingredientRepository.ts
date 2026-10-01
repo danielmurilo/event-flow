@@ -44,7 +44,6 @@ export class FirestoreIngredientRepository implements IIngredientRepository {
         name: data.name || '',
         brand: data.brand || '',
         measurement_unity: data.measurement_unity || 'kg',
-        correction_factor: Number(data.correction_factor) || 1.0,
         cost: Number(data.cost) || 0,
         total_yield_homemade_measure: data.total_yield_homemade_measure || ''
       });
@@ -67,7 +66,6 @@ export class FirestoreIngredientRepository implements IIngredientRepository {
       name: data.name || '',
       brand: data.brand || '',
       measurement_unity: data.measurement_unity || 'kg',
-      correction_factor: Number(data.correction_factor) || 1.0,
       cost: Number(data.cost) || 0,
       total_yield_homemade_measure: data.total_yield_homemade_measure || ''
     };
@@ -84,7 +82,6 @@ export class FirestoreIngredientRepository implements IIngredientRepository {
       name: ingredient.name,
       brand: ingredient.brand || '',
       measurement_unity: ingredient.measurement_unity || 'kg',
-      correction_factor: Number(ingredient.correction_factor) || 1.0,
       cost: Number(ingredient.cost) || 0,
       total_yield_homemade_measure: ingredient.total_yield_homemade_measure || ''
     }, { merge: true });
