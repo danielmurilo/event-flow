@@ -1,0 +1,110 @@
+import {
+  Firestore,
+  collection,
+  query,
+  where,
+  getDocs,
+  doc,
+  getDoc,
+  setDoc,
+  deleteDoc
+} from 'firebase/firestore';
+import { getFirebaseFirestore } from '@/services/firebase/firebaseApp';
+import { PreparationTechnicalSheet } from '@/models/types/recipe.types';
+
+export interface ITechnicalSheetRepository {
+  listByTenant(tenantId: string): Promise<PreparationTechnicalSheet[]>;
+  findById(id: string, tenantId: string): Promise<PreparationTechnicalSheet | null>;
+  save(sheet: PreparationTechnicalSheet): Promise<void>;
+  delete(id: string, tenantId: string): Promise<void>;
+}
+
+export class FirestoreTechnicalSheetRepository implements ITechnicalSheetRepository {
+  private db: Firestore;
+
+  constructor(dbInstance?: Firestore) {
+    this.db = dbInstance || getFirebaseFirestore();
+  }
+
+  async listByTenant(tenantId: string): Promise<PreparationTechnicalSheet[]> {
+    if (!tenantId) {
+      throw new Error('Tenant ID é obrigatório para consultar fichas técnicas.');
+    }
+
+    const colRef = collection(this.db, 'technical_sheets');
+    const q = query(colRef, where('tenantId', '==', tenantId));
+    const snapshot = await getDocs(q);
+
+    const sheets: PreparationTechnicalSheet[] = [];
+    snapshot.forEach((docSnap) => {
+      const data = docSnap.data();
+      sheets.push({
+        id: docSnap.id,
+        tenantId: data.tenantId,
+        dish_category_id: data.dish_category_id || '',
+        name: data.name || '',
+        ingredients: data.ingredients || [],
+        preparation_method: data.preparation_method || [],
+        total_yield: Number(data.total_yield) || 1,
+        total_yield_measurement_unity: data.total_yield_measurement_unity || 'porções',
+        total_yield_weight: Number(data.total_yield_weight) || 0,
+        total_yield_cost: Number(data.total_yield_cost) || 0
+      });
+    });
+
+    return sheets;
+  }
+
+  async findById(id: string, tenantId: string): Promise<PreparationTechnicalSheet | null> {
+    const docRef = doc(this.db, 'technical_sheets', id);
+    const snap = await getDoc(docRef);
+
+    if (!snap.exists()) return null;
+    const data = snap.data();
+    if (data.tenantId !== tenantId) return null;
+
+    return {
+      id: snap.id,
+      tenantId: data.tenantId,
+      dish_category_id: data.dish_category_id || '',
+      name: data.name || '',
+      ingredients: data.ingredients || [],
+      preparation_method: data.preparation_method || [],
+      total_yield: Number(data.total_yield) || 1,
+      total_yield_measurement_unity: data.total_yield_measurement_unity || 'porções',
+      total_yield_weight: Number(data.total_yield_weight) || 0,
+      total_yield_cost: Number(data.total_yield_cost) || 0
+    };
+  }
+
+  async save(sheet: PreparationTechnicalSheet): Promise<void> {
+    if (!sheet.tenantId) {
+      throw new Error('Tenant ID é obrigatório para persistir ficha técnica.');
+    }
+
+    const docRef = doc(this.db, 'technical_sheets', sheet.id);
+    await setDoc(docRef, {
+      tenantId: sheet.tenantId,
+      dish_category_id: sheet.dish_category_id,
+      name: sheet.name,
+      ingredients: sheet.ingredients || [],
+      preparation_method: sheet.preparation_method || [],
+      total_yield: Number(sheet.total_yield) || 1,
+      total_yield_measurement_unity: sheet.total_yield_measurement_unity || 'porções',
+      total_yield_weight: Number(sheet.total_yield_weight) || 0,
+      total_yield_cost: Number(sheet.total_yield_cost) || 0
+    }, { merge: true });
+  }
+
+  async delete(id: string, tenantId: string): Promise<void> {
+    const existing = await this.findById(id, tenantId);
+    if (!existing) {
+      throw new Error('Ficha técnica não encontrada para este tenant.');
+    }
+
+    const docRef = doc(this.db, 'technical_sheets', id);
+    await deleteDoc(docRef);
+  }
+}
+
+export const technicalSheetRepository = new FirestoreTechnicalSheetRepository();

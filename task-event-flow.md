@@ -94,4 +94,11 @@
 - [x] **Etapa 26: Testes Unitários e Validação Estrita**
   - 100% de sucesso na suíte Vitest: 50 testes passando em 9 arquivos de teste.
   - `npm run build` (`tsc --noEmit && vite build`) validado sem qualquer erro.
+- [x] **Etapa 27: Formulários & Repositórios de CRUD Firestore (Categorias, Ingredientes & Fichas Técnicas)**
+  - `categoryRepository.ts`: Repositório Firestore com isolamento multitenant (`listByTenant`, `findById`, `save`, `delete`).
+  - `ingredientRepository.ts`: Repositório Firestore com persistência de FC (Fator de Correção), custo unitário, marca, rendimento caseiro e unidade.
+  - `technicalSheetRepository.ts`: Repositório Firestore para fichas técnicas com modo de preparo, rendimento e custos.
+  - `AdminCrudPage.ts`: Modais interativos com formulários completos para criar e editar registros, exclusão com confirmação e toasts de feedback em tempo real.
+  - 59 testes unitários aprovados em 10 arquivos de teste no Vitest.
+
 

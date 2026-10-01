@@ -10,12 +10,18 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    function userDocExists() {
+      return exists(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
     function getUserData() {
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
     }
 
     function currentUserTenant() {
-      return getUserData().tenantId;
+      return userDocExists() && ('tenantId' in getUserData())
+        ? getUserData().tenantId
+        : 'buffet-principal';
     }
 
     // Regra para perfil de usuários
@@ -27,12 +33,25 @@ service cloud.firestore {
     // Regras multitenant para entidades de domínio (events, checklists, recipes, support_materials, etc.)
     match /{collectionName}/{docId} {
       allow read: if isAuthenticated() && (
-        resource == null || resource.data.tenantId == currentUserTenant()
+        resource == null ||
+        !('tenantId' in resource.data) ||
+        resource.data.tenantId == currentUserTenant() ||
+        resource.data.tenantId == 'buffet-principal' ||
+        resource.data.tenantId == 'default-tenant'
       );
-      allow create: if isAuthenticated() && request.resource.data.tenantId == currentUserTenant();
-      allow update, delete: if isAuthenticated() && 
-        resource.data.tenantId == currentUserTenant() && 
-        request.resource.data.tenantId == currentUserTenant();
+      allow create: if isAuthenticated() && (
+        !('tenantId' in request.resource.data) ||
+        request.resource.data.tenantId == currentUserTenant() ||
+        request.resource.data.tenantId == 'buffet-principal' ||
+        request.resource.data.tenantId == 'default-tenant'
+      );
+      allow update, delete: if isAuthenticated() && (
+        resource == null ||
+        !('tenantId' in resource.data) ||
+        resource.data.tenantId == currentUserTenant() ||
+        resource.data.tenantId == 'buffet-principal' ||
+        resource.data.tenantId == 'default-tenant'
+      );
     }
   }
 }
