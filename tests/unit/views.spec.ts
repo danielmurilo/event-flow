@@ -109,8 +109,15 @@ describe('Views / UI Components', () => {
       vi.spyOn(authController, 'getState').mockReturnValue({
         user: {
           id: 'user-456',
+          tenantId: 'tenant-1',
           email: 'admin@eventflow.com',
-          displayName: 'Admin User'
+          displayName: 'Admin User',
+          photoURL: null,
+          themePreference: 'light',
+          role: 'admin',
+          status: 'active',
+          createdAt: '2026-01-01T00:00:00.000Z',
+          updatedAt: '2026-01-01T00:00:00.000Z'
         },
         isAuthenticated: true,
         isLoading: false
@@ -132,8 +139,15 @@ describe('Views / UI Components', () => {
       vi.spyOn(authController, 'getState').mockReturnValue({
         user: {
           id: 'user-789',
+          tenantId: 'tenant-1',
           email: '<script>alert(1)</script>@eventflow.com',
-          displayName: '<img src=x onerror=alert(1)>'
+          displayName: '<img src=x onerror=alert(1)>',
+          photoURL: null,
+          themePreference: 'light',
+          role: 'operator',
+          status: 'active',
+          createdAt: '2026-01-01T00:00:00.000Z',
+          updatedAt: '2026-01-01T00:00:00.000Z'
         },
         isAuthenticated: true,
         isLoading: false

@@ -1,15 +1,22 @@
 import { AuthGuard, RouteConfig } from './guards';
 
-export type RouteHandler = () => HTMLElement | Promise<HTMLElement>;
+export type RouteParams = Record<string, string>;
+export type RouteHandler = (params?: RouteParams) => HTMLElement | Promise<HTMLElement>;
 
 export interface RouteEntry extends RouteConfig {
   handler: RouteHandler;
+}
+
+interface MatchResult {
+  route: RouteEntry;
+  params: RouteParams;
 }
 
 export class Router {
   private routes: Map<string, RouteEntry> = new Map();
   private container: HTMLElement | null = null;
   private currentPath = '';
+  private currentParams: RouteParams = {};
   private isAuthenticated = false;
 
   constructor(containerElement?: HTMLElement) {
@@ -32,7 +39,7 @@ export class Router {
   }
 
   navigate(path: string, pushState = true): void {
-    if (pushState && typeof window !== 'undefined') {
+    if (pushState && typeof window !== 'undefined' && window.history?.pushState) {
       window.history.pushState({}, '', path);
     }
     this.currentPath = path;
@@ -46,6 +53,10 @@ export class Router {
     return this.currentPath || '/login';
   }
 
+  getParams(): RouteParams {
+    return this.currentParams;
+  }
+
   init(): void {
     if (typeof window !== 'undefined') {
       window.addEventListener('popstate', () => {
@@ -57,29 +68,74 @@ export class Router {
     }
   }
 
+  private matchRoute(path: string): MatchResult | null {
+    // 1. Match exato
+    if (this.routes.has(path)) {
+      return {
+        route: this.routes.get(path)!,
+        params: {}
+      };
+    }
+
+    // 2. Match parametrizado (ex: /events/:id)
+    for (const [pattern, route] of this.routes.entries()) {
+      if (!pattern.includes(':')) continue;
+
+      const paramNames: string[] = [];
+      const regexPattern = pattern.replace(/:([a-zA-Z0-9_]+)/g, (_, name) => {
+        paramNames.push(name);
+        return '([^/]+)';
+      });
+
+      const regex = new RegExp(`^${regexPattern}$`);
+      const match = path.match(regex);
+
+      if (match) {
+        const params: RouteParams = {};
+        paramNames.forEach((name, index) => {
+          params[name] = decodeURIComponent(match[index + 1]);
+        });
+        return { route, params };
+      }
+    }
+
+    return null;
+  }
+
   async resolveCurrentRoute(): Promise<void> {
     if (!this.container) return;
 
     let path = this.currentPath;
     if (!path || path === '/') {
-      path = this.isAuthenticated ? '/app' : '/login';
+      path = this.isAuthenticated
+        ? (this.routes.has('/events') ? '/events' : '/app')
+        : '/login';
     }
 
-    const route = this.routes.get(path);
-    if (!route) {
-      // Redireciona para /app ou /login se rota não existir
-      this.navigate(this.isAuthenticated ? '/app' : '/login', true);
+    const matched = this.matchRoute(path);
+
+    if (!matched) {
+      const fallback = this.isAuthenticated
+        ? (this.routes.has('/events') ? '/events' : '/app')
+        : '/login';
+
+      if (fallback !== path && this.routes.has(fallback)) {
+        this.navigate(fallback, false);
+      }
       return;
     }
 
+    const { route, params } = matched;
+    this.currentParams = params;
+
     const access = AuthGuard.canAccess(route, this.isAuthenticated);
     if (!access.allowed && access.redirectTo) {
-      this.navigate(access.redirectTo, true);
+      this.navigate(access.redirectTo, false);
       return;
     }
 
     try {
-      const element = await route.handler();
+      const element = await route.handler(params);
       this.container.innerHTML = '';
       this.container.appendChild(element);
     } catch (err) {

@@ -30,12 +30,15 @@ export class FirestoreUserRepository implements IUserRepository {
     const data = snapshot.data();
     return {
       id: userId,
+      tenantId: data.tenantId || 'default-tenant',
       email: data.email || '',
-      displayName: data.displayName || null,
+      displayName: data.displayName || '',
       photoURL: data.photoURL || null,
       themePreference: data.themePreference || 'light',
-      createdAt: data.createdAt,
-      updatedAt: data.updatedAt
+      role: data.role || 'operator',
+      status: data.status || 'active',
+      createdAt: data.createdAt || new Date().toISOString(),
+      updatedAt: data.updatedAt || new Date().toISOString()
     };
   }
 
@@ -45,10 +48,13 @@ export class FirestoreUserRepository implements IUserRepository {
     await setDoc(
       userDocRef,
       {
+        tenantId: user.tenantId || 'default-tenant',
         email: user.email,
         displayName: user.displayName,
         photoURL: user.photoURL || null,
         themePreference: user.themePreference || 'light',
+        role: user.role || 'operator',
+        status: user.status || 'active',
         updatedAt: now,
         ...(user.createdAt ? { createdAt: user.createdAt } : { createdAt: now })
       },

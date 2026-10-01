@@ -12,8 +12,15 @@ describe('AuthController', () => {
 
   const fakeUser: User = {
     id: 'user-123',
+    tenantId: 'tenant-1',
     email: 'test@eventflow.com',
-    displayName: 'Test User'
+    displayName: 'Test User',
+    photoURL: null,
+    themePreference: 'light',
+    role: 'operator',
+    status: 'active',
+    createdAt: '2026-01-01T00:00:00.000Z',
+    updatedAt: '2026-01-01T00:00:00.000Z'
   };
 
   beforeEach(() => {

@@ -6,9 +6,33 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
-    // Acesso aos dados do usuário somente pelo próprio usuário autenticado
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function currentUserTenant() {
+      return getUserData().tenantId;
+    }
+
+    // Regra para perfil de usuários
     match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // Regras multitenant para entidades de domínio (events, checklists, recipes, support_materials, etc.)
+    match /{collectionName}/{docId} {
+      allow read: if isAuthenticated() && (
+        resource == null || resource.data.tenantId == currentUserTenant()
+      );
+      allow create: if isAuthenticated() && request.resource.data.tenantId == currentUserTenant();
+      allow update, delete: if isAuthenticated() && 
+        resource.data.tenantId == currentUserTenant() && 
+        request.resource.data.tenantId == currentUserTenant();
     }
   }
 }

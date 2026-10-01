@@ -65,3 +65,33 @@
   - Execução de `npm run build` (`tsc --noEmit && vite build`) concluído com sucesso.
 - [x] **Etapa 18: Auditoria Final de Clean Code e Qualidade**
   - Verificação de conformidade, responsividade e separação rigorosa de camadas.
+
+---
+
+### Fase 4: Camada de Domínio, Isolamento Multitenant e Telas de Gestão (Concluída ✅)
+- [x] **Etapa 19: Modelagem Estrita de Domínio (`src/models/types/`)**
+  - `user.types.ts`: Suporte completo a `tenantId`, `role` (`admin` | `manager` | `operator`), `status` (`active` | `inactive`), timestamps e `themePreference`.
+  - `recipe.types.ts`: `DishCategory`, `Ingredient` (FC, custo, rendimento caseiro), `PreparationTechnicalSheet` e `Dish`.
+  - `supportMaterial.types.ts`: `SupportMaterialCategory` e `SupportMaterial` (Caixa Seca, Limpeza, EPIs, Elétrica).
+  - `event.types.ts`: `Event` e `EventService` com status operacional, logística de transporte e responsáveis.
+  - `checklist.types.ts`: `ExpeditionReturnChecklist` (dupla checagem: saída x retorno) e `ShoppingList`.
+  - `index.ts`: Barrel file centralizador de tipos.
+- [x] **Etapa 20: Repositório Firestore & Segurança Multitenant**
+  - `eventRepository.ts`: Implementação de `FirestoreEventRepository` com consulta indexada ordenada decrescente por `date_time_start` e filtro obrigatório por `tenantId`.
+  - `firestore.rules`: Regras rigorosas de segurança Firestore onde leitura e escrita exigem correspondência com o `tenantId` do usuário autenticado.
+- [x] **Etapa 21: Roteamento SPA com Parâmetros Dinâmicos**
+  - Atualização do `Router` (`router.ts`) para suporte a rotas parametrizadas (ex: `/events/:id`), extração segura de parâmetros e guardas de acesso.
+- [x] **Etapa 22: AppShell, Topbar e Menu Sanduíche Drawer**
+  - `AppShell.ts`: Header global com botão sanduíche, Drawer lateral retrátil com navegação completa, card do usuário logado com tenant/role e bloqueio visual de `/users` para operadores.
+- [x] **Etapa 23: Dashboard e Lista de Eventos (`EventsPage.ts`)**
+  - Tabela responsiva com Data Início, Nome, Responsável, Data Fim, Status com badges coloridos e link de redirecionamento para `/events/:id`.
+  - Filtros dinâmicos por status e busca textual com debounce.
+- [x] **Etapa 24: Detalhes do Evento & Checklist Duplo (`EventDetailsPage.ts`)**
+  - Visão geral, programação, transporte e equipe.
+  - Abas: Dados Gerais, Serviços & Cardápio, Checklist de Expedição/Volta (dupla checagem interativa) e Materiais de Apoio.
+- [x] **Etapa 25: Rotas Administrativas (`AdminCrudPage.ts`)**
+  - Gestão de `/categories`, `/ingredients`, `/technical-sheets`, `/dishes`, `/services`, `/support-materials` e `/users` (com controle de permissão).
+- [x] **Etapa 26: Testes Unitários e Validação Estrita**
+  - 100% de sucesso na suíte Vitest: 50 testes passando em 9 arquivos de teste.
+  - `npm run build` (`tsc --noEmit && vite build`) validado sem qualquer erro.
+

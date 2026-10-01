@@ -87,4 +87,30 @@ describe('Router', () => {
     expect(appHandler).toHaveBeenCalled();
     expect(container.querySelector('#app-view')?.textContent).toBe('Dashboard Protegido');
   });
+
+  it('deve extrair parâmetros dinâmicos de rota (ex: /events/:id)', async () => {
+    let capturedParams: any = null;
+    const eventDetailsHandler = vi.fn((params) => {
+      capturedParams = params;
+      const el = document.createElement('div');
+      el.id = 'event-details';
+      el.textContent = `Evento ${params?.id}`;
+      return el;
+    });
+
+    router.register({
+      path: '/events/:id',
+      isProtected: true,
+      handler: eventDetailsHandler
+    });
+
+    router.setAuthState(true);
+    router.navigate('/events/event-xyz-99', false);
+    await router.resolveCurrentRoute();
+
+    expect(eventDetailsHandler).toHaveBeenCalled();
+    expect(capturedParams).toEqual({ id: 'event-xyz-99' });
+    expect(router.getParams()).toEqual({ id: 'event-xyz-99' });
+    expect(container.querySelector('#event-details')?.textContent).toBe('Evento event-xyz-99');
+  });
 });

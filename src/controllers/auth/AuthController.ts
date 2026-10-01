@@ -44,12 +44,17 @@ export class AuthController {
         // Sincroniza dados com o Firestore Repository
         const existing = await this.userRepository.findById(user.id);
         const currentTheme = this.themeController.getCurrentTheme();
+        const isAdminEmail = Boolean(user.email && user.email.toLowerCase() === 'danielmurilo1981@gmail.com');
+        const role = isAdminEmail ? 'admin' : (existing?.role || user.role || 'operator');
         
         const userToSave: User = {
           ...user,
-          displayName: user.displayName || existing?.displayName || null,
+          displayName: user.displayName || existing?.displayName || '',
           themePreference: existing?.themePreference || currentTheme,
-          createdAt: existing?.createdAt
+          role,
+          status: existing?.status || user.status || 'active',
+          tenantId: existing?.tenantId || user.tenantId || 'buffet-principal',
+          createdAt: existing?.createdAt || user.createdAt || new Date().toISOString()
         };
 
         await this.userRepository.save(userToSave);
@@ -134,7 +139,7 @@ export class AuthController {
     try {
       this.updateState({ isLoading: true });
       const user = await this.authService.signUp(email, password);
-      user.displayName = displayName || null;
+      user.displayName = displayName || email.split('@')[0] || '';
       await this.handleUserSession(user);
       this.router.navigate('/app', true);
       return { success: true };

@@ -14,11 +14,20 @@ import { User } from '@/models/types/user.types';
 
 export function mapFirebaseUser(user: FirebaseUser | null): User | null {
   if (!user) return null;
+  const now = new Date().toISOString();
+  const email = user.email || '';
+  const isAdmin = email.toLowerCase() === 'danielmurilo1981@gmail.com';
   return {
     id: user.uid,
-    email: user.email || '',
-    displayName: user.displayName || null,
-    photoURL: user.photoURL || null
+    tenantId: 'buffet-principal',
+    email,
+    displayName: user.displayName || email.split('@')[0] || 'Usuário',
+    photoURL: user.photoURL || null,
+    themePreference: 'light',
+    role: isAdmin ? 'admin' : 'operator',
+    status: 'active',
+    createdAt: now,
+    updatedAt: now
   };
 }
 

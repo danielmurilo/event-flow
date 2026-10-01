@@ -53,9 +53,10 @@ export function createAppPage(): HTMLElement {
     await authController.logout();
   });
 
-  const updateThemeControl = (theme: 'light' | 'dark') => {
-    const label = theme === 'dark' ? 'Ativar tema claro' : 'Ativar tema escuro';
-    btnToggleTheme.innerHTML = theme === 'dark' ? sunIcon : moonIcon;
+  const updateThemeControl = (theme: import('@/models/types/user.types').ThemePreference) => {
+    const isDark = theme === 'dark';
+    const label = isDark ? 'Ativar tema claro' : 'Ativar tema escuro';
+    btnToggleTheme.innerHTML = isDark ? sunIcon : moonIcon;
     const icon = btnToggleTheme.querySelector('svg');
     icon?.setAttribute('aria-hidden', 'true');
     icon?.setAttribute('focusable', 'false');
