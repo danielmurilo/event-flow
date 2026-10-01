@@ -212,16 +212,51 @@ export function createAdminCrudPage(
   const isTechSheet = path === '/technical-sheets';
   const isDish = path === '/dishes';
 
-  const titles: Record<string, { title: string; subtitle: string }> = {
-    '/categories': { title: 'Categorias de Pratos', subtitle: 'Classificação gastronómica vinculada a fichas técnicas e cardápios no Firestore.' },
-    '/ingredients': { title: 'Ingredientes & Insumos', subtitle: 'Catálogo de insumos com controle de Fator de Correção (FC) e custos unitários.' },
-    '/technical-sheets': { title: 'Fichas Técnicas de Preparação', subtitle: 'Fichas de rendimento, modo de preparo e custos operacionais.' },
-    '/dishes': { title: 'Catálogo de Pratos', subtitle: 'Composições servidas aos convidados formadas por fichas técnicas e insumos extras.' },
-    '/services': { title: 'Serviços de Eventos', subtitle: 'Modelos de serviço (Welcome Drink, Coquetel, Jantar, Carrinhos ao Vivo).' },
-    '/support-materials': { title: 'Materiais de Apoio & Logística', subtitle: 'Controle de caixas secas, equipamentos térmicos, EPIs e elétrica.' }
+  const titles: Record<string, { title: string; subtitle: string; singular: string; feminine?: boolean }> = {
+    '/categories': {
+      title: 'Categorias de Pratos',
+      subtitle: 'Classificação gastronómica vinculada a fichas técnicas e cardápios no Firestore.',
+      singular: 'Categoria de Prato',
+      feminine: true
+    },
+    '/ingredients': {
+      title: 'Ingredientes & Insumos',
+      subtitle: 'Catálogo de insumos com controle de Fator de Correção (FC) e custos unitários.',
+      singular: 'Ingrediente',
+      feminine: false
+    },
+    '/technical-sheets': {
+      title: 'Fichas Técnicas de Preparação',
+      subtitle: 'Fichas de rendimento, modo de preparo e custos operacionais.',
+      singular: 'Ficha Técnica de Preparação',
+      feminine: true
+    },
+    '/dishes': {
+      title: 'Catálogo de Pratos',
+      subtitle: 'Composições servidas aos convidados formadas por fichas técnicas e insumos extras.',
+      singular: 'Prato',
+      feminine: false
+    },
+    '/services': {
+      title: 'Serviços de Eventos',
+      subtitle: 'Modelos de serviço (Welcome Drink, Coquetel, Jantar, Carrinhos ao Vivo).',
+      singular: 'Serviço de Evento',
+      feminine: false
+    },
+    '/support-materials': {
+      title: 'Materiais de Apoio & Logística',
+      subtitle: 'Controle de caixas secas, equipamentos térmicos, EPIs e elétrica.',
+      singular: 'Material de Apoio',
+      feminine: false
+    }
   };
 
-  const meta = titles[path] || { title: 'Módulo Administrativo', subtitle: 'Gestão operacional de buffet.' };
+  const meta = titles[path] || {
+    title: 'Módulo Administrativo',
+    subtitle: 'Gestão operacional de buffet.',
+    singular: 'Registro',
+    feminine: false
+  };
   const hasInlineAdd = isIngredient || isTechSheet;
 
   content.innerHTML = `
@@ -338,7 +373,8 @@ export function createAdminCrudPage(
 
   // RENDERIZADOR DE CAMPOS DO FORMULÁRIO BASEADO NA ENTIDADE
   const setupFormFields = (itemToEdit?: any) => {
-    modalTitle.textContent = itemToEdit ? `Editar ${meta.title.slice(0, -1)}` : `Novo em ${meta.title}`;
+    const prefixNew = meta.feminine ? 'Nova' : 'Novo';
+    modalTitle.textContent = itemToEdit ? `Editar ${meta.singular}` : `${prefixNew} ${meta.singular}`;
 
     if (isCategory) {
       modalFields.innerHTML = `
