@@ -814,12 +814,10 @@ export function createAdminCrudPage(
         modalSheetIngredients[rowIndex].ingredient_id = ingId;
         const targetIng = cachedIngredients.find(x => x.id === ingId) || INITIAL_INGREDIENTS.find(x => x.id === ingId);
         if (targetIng) {
-          const net = modalSheetIngredients[rowIndex].net_weight || 1.0;
-          const gross = modalSheetIngredients[rowIndex].gross_weight || net;
-          const fc = net > 0 ? Number((gross / net).toFixed(2)) : 1.0;
+          const net = modalSheetIngredients[rowIndex].net_weight || 0;
+          const gross = modalSheetIngredients[rowIndex].gross_weight || 0;
+          const fc = (net > 0 && gross > 0) ? Number((gross / net).toFixed(2)) : 1.0;
           const cost = Number((gross * (targetIng.cost || 0)).toFixed(2));
-          modalSheetIngredients[rowIndex].net_weight = net;
-          modalSheetIngredients[rowIndex].gross_weight = gross;
           modalSheetIngredients[rowIndex].correction_factor = fc;
           modalSheetIngredients[rowIndex].cost = cost;
         }
@@ -865,9 +863,9 @@ export function createAdminCrudPage(
             ? `${ing.name}${ing.brand ? ` (${ing.brand})` : ''}`
             : ((item as any).name || (item as any).ingredient_name || ingId);
 
-          const net = item.net_weight !== undefined ? item.net_weight : 1.0;
-          const gross = item.gross_weight !== undefined ? item.gross_weight : net;
-          const fc = (net > 0 && gross > 0) ? Number((gross / net).toFixed(2)) : 1.0;
+          const net = item.net_weight !== undefined ? item.net_weight : 0;
+          const gross = item.gross_weight !== undefined ? item.gross_weight : 0;
+          const fc = (net > 0 && gross > 0) ? Number((gross / net).toFixed(2)) : (item.correction_factor || 1.0);
 
           return `
             <div class="sheet-ing-row" data-index="${i}">
@@ -898,6 +896,18 @@ export function createAdminCrudPage(
                   </div>
                 </div>
               </div>
+              <div class="sheet-ing-col-gross">
+                <label class="form-label-xs">Peso Bruto (${unit})</label>
+                <input
+                  type="number"
+                  step="0.001"
+                  min="0"
+                  class="form-control form-control-sm input-row-gross"
+                  data-index="${i}"
+                  value="${item.gross_weight !== undefined && item.gross_weight > 0 ? item.gross_weight : ''}"
+                  placeholder="0.000"
+                />
+              </div>
               <div class="sheet-ing-col-net">
                 <label class="form-label-xs">Peso Líq. (${unit})</label>
                 <input
@@ -906,23 +916,21 @@ export function createAdminCrudPage(
                   min="0"
                   class="form-control form-control-sm input-row-net"
                   data-index="${i}"
-                  value="${item.net_weight !== undefined ? item.net_weight : ''}"
+                  value="${item.net_weight !== undefined && item.net_weight > 0 ? item.net_weight : ''}"
                   placeholder="0.000"
                 />
               </div>
-              <div class="sheet-ing-col-gross">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                  <label class="form-label-xs" style="margin: 0;">Peso Bruto (${unit})</label>
-                  <span class="row-fc-badge" title="Fator de Correção na Receita (Peso Bruto / Peso Líquido)">FC: ${fc.toFixed(2)}</span>
-                </div>
+              <div class="sheet-ing-col-fc">
+                <label class="form-label-xs" title="Fator de Correção (Peso Bruto / Peso Líquido)">FC</label>
                 <input
-                  type="number"
-                  step="0.001"
-                  min="0"
-                  class="form-control form-control-sm input-row-gross"
+                  type="text"
+                  readonly
+                  class="form-control form-control-sm input-row-fc"
                   data-index="${i}"
-                  value="${item.gross_weight !== undefined ? item.gross_weight : ''}"
-                  placeholder="0.000"
+                  value="${(gross > 0 && net > 0) ? fc.toFixed(2) : '-'}"
+                  placeholder="1.00"
+                  title="Fator de Correção Calculado (Peso Bruto / Peso Líquido)"
+                  style="background: var(--color-surface-container); font-weight: 600; text-align: center;"
                 />
               </div>
               <div class="sheet-ing-col-measure">
@@ -961,17 +969,27 @@ export function createAdminCrudPage(
           const footerBtn = dropdown.querySelector<HTMLButtonElement>('.btn-combobox-quick-add')!;
           const q = query.toLowerCase().trim();
 
-          const matches = cachedIngredients.filter(ci =>
-            !q ||
-            ci.name.toLowerCase().includes(q) ||
-            (ci.brand && ci.brand.toLowerCase().includes(q))
-          );
+          const currentSelectedId = modalSheetIngredients[rowIndex]?.ingredient_id;
+          const currentIng = cachedIngredients.find(ci => ci.id === currentSelectedId) || INITIAL_INGREDIENTS.find(ci => ci.id === currentSelectedId);
+          const currentLabel = currentIng ? `${currentIng.name}${currentIng.brand ? ` (${currentIng.brand})` : ''}`.toLowerCase().trim() : '';
+
+          // Se a busca for vazia ou for o texto do ingrediente já selecionado na linha, exibe o catálogo completo
+          const isFullList = !q || q === currentLabel;
+
+          const matches = isFullList
+            ? cachedIngredients
+            : cachedIngredients.filter(ci => {
+                const name = ci.name.toLowerCase();
+                const brand = (ci.brand || '').toLowerCase();
+                const fullName = `${name} ${brand} (${brand})`.toLowerCase();
+                return name.includes(q) || brand.includes(q) || fullName.includes(q);
+              });
 
           if (matches.length === 0) {
             listEl.innerHTML = `<div class="combobox-empty">Nenhum ingrediente com "${query}".</div>`;
           } else {
             listEl.innerHTML = matches.map(ci => {
-              const isSelected = ci.id === modalSheetIngredients[rowIndex]?.ingredient_id;
+              const isSelected = ci.id === currentSelectedId;
               return `
                 <div class="combobox-item ${isSelected ? 'selected' : ''}" data-id="${ci.id}">
                   <div class="combobox-item-main">
@@ -985,9 +1003,16 @@ export function createAdminCrudPage(
                 </div>
               `;
             }).join('');
+
+            const selectedItemEl = listEl.querySelector<HTMLElement>('.combobox-item.selected');
+            if (selectedItemEl && typeof selectedItemEl.scrollIntoView === 'function') {
+              setTimeout(() => {
+                selectedItemEl.scrollIntoView({ block: 'nearest' });
+              }, 10);
+            }
           }
 
-          footerBtn.innerHTML = q
+          footerBtn.innerHTML = (!isFullList && q)
             ? `<span class="btn-icon">${ICONS.plus}</span> Cadastrar "${query}" no Catálogo`
             : `<span class="btn-icon">${ICONS.plus}</span> Cadastrar Novo Ingrediente`;
 
@@ -1012,13 +1037,24 @@ export function createAdminCrudPage(
           const combobox = searchInp.closest('.searchable-combobox')!;
           const dropdown = combobox.querySelector<HTMLElement>('.combobox-dropdown')!;
 
-          const openDropdown = () => {
+          const openDropdown = (showAll = false) => {
             closeAllDropdowns();
-            updateDropdownList(dropdown, searchInp.value, rowIndex);
+            updateDropdownList(dropdown, showAll ? '' : searchInp.value, rowIndex);
             dropdown.style.display = 'block';
           };
 
-          searchInp.addEventListener('focus', openDropdown);
+          searchInp.addEventListener('focus', () => {
+            searchInp.select();
+            openDropdown(true);
+          });
+
+          searchInp.addEventListener('click', () => {
+            if (dropdown.style.display !== 'block') {
+              searchInp.select();
+              openDropdown(true);
+            }
+          });
+
           searchInp.addEventListener('input', () => {
             updateDropdownList(dropdown, searchInp.value, rowIndex);
             dropdown.style.display = 'block';
@@ -1030,7 +1066,8 @@ export function createAdminCrudPage(
             if (dropdown.style.display === 'block') {
               dropdown.style.display = 'none';
             } else {
-              openDropdown();
+              searchInp.select();
+              openDropdown(true);
             }
           });
 
@@ -1053,6 +1090,16 @@ export function createAdminCrudPage(
 
         const onDocumentClick = (e: MouseEvent) => {
           if (!(e.target as HTMLElement).closest('.searchable-combobox')) {
+            container.querySelectorAll<HTMLInputElement>('.input-ing-search').forEach(inp => {
+              const rIdx = Number(inp.getAttribute('data-index'));
+              const selId = modalSheetIngredients[rIdx]?.ingredient_id;
+              const ingObj = cachedIngredients.find(ci => ci.id === selId) || INITIAL_INGREDIENTS.find(ci => ci.id === selId);
+              if (ingObj) {
+                inp.value = `${ingObj.name}${ingObj.brand ? ` (${ingObj.brand})` : ''}`;
+              } else if (!selId) {
+                inp.value = '';
+              }
+            });
             closeAllDropdowns();
           }
         };
@@ -1060,53 +1107,45 @@ export function createAdminCrudPage(
         (container as any)._onDocClick = onDocumentClick;
         document.addEventListener('click', onDocumentClick);
 
-        container.querySelectorAll<HTMLInputElement>('.input-row-net').forEach(inp => {
+        container.querySelectorAll<HTMLInputElement>('.input-row-gross').forEach(inp => {
           inp.addEventListener('input', (e) => {
             const idx = Number((e.target as HTMLElement).getAttribute('data-index'));
-            const val = parseNumber((e.target as HTMLInputElement).value, 0);
-            modalSheetIngredients[idx].net_weight = val;
+            const grossVal = parseNumber((e.target as HTMLInputElement).value, 0);
+            modalSheetIngredients[idx].gross_weight = grossVal;
+
             const targetIng = cachedIngredients.find(x => x.id === modalSheetIngredients[idx].ingredient_id) || INITIAL_INGREDIENTS.find(x => x.id === modalSheetIngredients[idx].ingredient_id);
             const unitCost = targetIng ? targetIng.cost : 0;
-
-            const currentFc = modalSheetIngredients[idx].correction_factor || 1.0;
-            const gross = Number((val * currentFc).toFixed(3));
-            modalSheetIngredients[idx].gross_weight = gross;
-            modalSheetIngredients[idx].correction_factor = currentFc;
-            const cost = Number((gross * unitCost).toFixed(2));
+            const netVal = modalSheetIngredients[idx].net_weight || 0;
+            const fc = (netVal > 0 && grossVal > 0) ? Number((grossVal / netVal).toFixed(2)) : 1.0;
+            modalSheetIngredients[idx].correction_factor = fc;
+            const cost = Number((grossVal * unitCost).toFixed(2));
             modalSheetIngredients[idx].cost = cost;
 
             const rowEl = container.querySelector(`.sheet-ing-row[data-index="${idx}"]`);
             if (rowEl) {
-              const grossInp = rowEl.querySelector<HTMLInputElement>('.input-row-gross');
               const costInp = rowEl.querySelector<HTMLInputElement>('.input-row-cost');
-              const fcBadge = rowEl.querySelector<HTMLElement>('.row-fc-badge');
-              if (grossInp) grossInp.value = String(gross);
+              const fcInp = rowEl.querySelector<HTMLInputElement>('.input-row-fc');
               if (costInp) costInp.value = `R$ ${cost.toFixed(2)}`;
-              if (fcBadge) fcBadge.textContent = `FC: ${currentFc.toFixed(2)}`;
+              if (fcInp) fcInp.value = (netVal > 0 && grossVal > 0) ? fc.toFixed(2) : '-';
             }
             updateCalculatedCost();
           });
         });
 
-        container.querySelectorAll<HTMLInputElement>('.input-row-gross').forEach(inp => {
+        container.querySelectorAll<HTMLInputElement>('.input-row-net').forEach(inp => {
           inp.addEventListener('input', (e) => {
             const idx = Number((e.target as HTMLElement).getAttribute('data-index'));
-            const val = parseNumber((e.target as HTMLInputElement).value, 0);
-            modalSheetIngredients[idx].gross_weight = val;
-            const targetIng = cachedIngredients.find(x => x.id === modalSheetIngredients[idx].ingredient_id) || INITIAL_INGREDIENTS.find(x => x.id === modalSheetIngredients[idx].ingredient_id);
-            const unitCost = targetIng ? targetIng.cost : 0;
-            const net = modalSheetIngredients[idx].net_weight || 0;
-            const fc = net > 0 ? Number((val / net).toFixed(2)) : 1.0;
+            const netVal = parseNumber((e.target as HTMLInputElement).value, 0);
+            modalSheetIngredients[idx].net_weight = netVal;
+
+            const grossVal = modalSheetIngredients[idx].gross_weight || 0;
+            const fc = (netVal > 0 && grossVal > 0) ? Number((grossVal / netVal).toFixed(2)) : 1.0;
             modalSheetIngredients[idx].correction_factor = fc;
-            const cost = Number((val * unitCost).toFixed(2));
-            modalSheetIngredients[idx].cost = cost;
 
             const rowEl = container.querySelector(`.sheet-ing-row[data-index="${idx}"]`);
             if (rowEl) {
-              const costInp = rowEl.querySelector<HTMLInputElement>('.input-row-cost');
-              const fcBadge = rowEl.querySelector<HTMLElement>('.row-fc-badge');
-              if (costInp) costInp.value = `R$ ${cost.toFixed(2)}`;
-              if (fcBadge) fcBadge.textContent = `FC: ${fc.toFixed(2)}`;
+              const fcInp = rowEl.querySelector<HTMLInputElement>('.input-row-fc');
+              if (fcInp) fcInp.value = (netVal > 0 && grossVal > 0) ? fc.toFixed(2) : '-';
             }
             updateCalculatedCost();
           });

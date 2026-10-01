@@ -342,22 +342,23 @@ describe('CRUD Administrativo - Repositórios & Formulários Firestore', () => {
       selectIng1.dispatchEvent(new window.Event('change'));
       rows = page.querySelectorAll('.sheet-ing-row');
 
-      // Altera o peso líquido e peso bruto do primeiro ingrediente (ing-01: custo unitário 80.0)
-      const inputNet = rows[0].querySelector<HTMLInputElement>('.input-row-net')!;
-      inputNet.value = '2.0';
-      inputNet.dispatchEvent(new window.Event('input'));
-
+      // Altera o peso bruto e peso líquido do primeiro ingrediente (ing-01: custo unitário 80.0)
       const inputGross = rows[0].querySelector<HTMLInputElement>('.input-row-gross')!;
       inputGross.value = '2.5';
       inputGross.dispatchEvent(new window.Event('input'));
 
-      // FC calculado dinamicamente na ficha técnica (2.5 / 2.0 = 1.25)
-      const fcBadge = rows[0].querySelector<HTMLElement>('.row-fc-badge')!;
-      expect(fcBadge.textContent).toBe('FC: 1.25');
+      const inputNet = rows[0].querySelector<HTMLInputElement>('.input-row-net')!;
+      inputNet.value = '2.0';
+      inputNet.dispatchEvent(new window.Event('input'));
 
-      // Custo esperado: 2.5 * 80.0 = 200.00
+      // O peso bruto NÃO deve ser modificado ao alterar o peso líquido
       expect(inputGross.value).toBe('2.5');
 
+      // FC calculado dinamicamente no campo dedicado da ficha técnica (2.5 / 2.0 = 1.25)
+      const inputFc = rows[0].querySelector<HTMLInputElement>('.input-row-fc')!;
+      expect(inputFc.value).toBe('1.25');
+
+      // Custo esperado: 2.5 * 80.0 = 200.00
       const inputCost = page.querySelector<HTMLInputElement>('#input-sheet-cost')!;
       expect(inputCost.value).toBe('200.00');
 
@@ -370,6 +371,11 @@ describe('CRUD Administrativo - Repositórios & Formulários Firestore', () => {
       const selectIng2 = rows[1].querySelector<HTMLSelectElement>('.select-row-ing')!;
       selectIng2.value = 'ing-02';
       selectIng2.dispatchEvent(new window.Event('change'));
+      rows = page.querySelectorAll('.sheet-ing-row');
+
+      const inputGross2 = rows[1].querySelector<HTMLInputElement>('.input-row-gross')!;
+      inputGross2.value = '0.5';
+      inputGross2.dispatchEvent(new window.Event('input'));
 
       const inputNet2 = rows[1].querySelector<HTMLInputElement>('.input-row-net')!;
       inputNet2.value = '0.5';
@@ -708,6 +714,88 @@ describe('CRUD Administrativo - Repositórios & Formulários Firestore', () => {
 
       const costTotalInput = page.querySelector<HTMLInputElement>('#input-sheet-cost')!;
       expect(costTotalInput.value).toBe('164.20');
+    });
+
+    it('deve exibir todos os ingredientes ao abrir o combobox de um item que já possui ingrediente selecionado', async () => {
+      const mockCategoryRepo = {
+        listByTenant: vi.fn().mockResolvedValue([
+          { id: 'cat-02', tenantId: 'tenant-buffet', name: 'Carnes Nobres' }
+        ]),
+        findById: vi.fn(),
+        save: vi.fn(),
+        delete: vi.fn()
+      };
+
+      const mockIngredientRepo = {
+        listByTenant: vi.fn().mockResolvedValue([
+          { id: 'ing-01', tenantId: 'tenant-buffet', name: 'Filé Mignon Limpo', brand: 'Swift', measurement_unity: 'kg', cost: 78.50, total_yield_homemade_measure: '' },
+          { id: 'ing-05', tenantId: 'tenant-buffet', name: 'Azeite de Oliva', brand: 'Gallo', measurement_unity: 'l', cost: 48.00, total_yield_homemade_measure: '' }
+        ]),
+        findById: vi.fn(),
+        save: vi.fn(),
+        delete: vi.fn()
+      };
+
+      const existingSheet = {
+        id: 'ft-001',
+        tenantId: 'tenant-buffet',
+        dish_category_id: 'cat-02',
+        name: 'Filé Mignon ao Molho Roti',
+        ingredients: [
+          { ingredient_id: 'ing-01', gross_weight: 2.0, net_weight: 1.6, cost: 157.00 }
+        ],
+        preparation_method: [],
+        total_yield: 10,
+        total_yield_measurement_unity: 'porções',
+        total_yield_weight: 2.0,
+        total_yield_cost: 157.00
+      };
+
+      const mockTechSheetRepo = {
+        listByTenant: vi.fn().mockResolvedValue([existingSheet]),
+        findById: vi.fn(),
+        save: vi.fn(),
+        delete: vi.fn()
+      };
+
+      const page = createAdminCrudPage('/technical-sheets', {
+        category: mockCategoryRepo as any,
+        ingredient: mockIngredientRepo as any,
+        techSheet: mockTechSheetRepo as any
+      });
+      document.body.appendChild(page);
+
+      await new Promise(r => setTimeout(r, 20));
+
+      const btnEdit = page.querySelector<HTMLButtonElement>('.btn-edit')!;
+      btnEdit.click();
+
+      const searchInput = page.querySelector<HTMLInputElement>('.input-ing-search')!;
+      expect(searchInput.value).toContain('Filé Mignon Limpo');
+
+      // Foca no input ou clica no botão toggle
+      const toggleBtn = page.querySelector<HTMLButtonElement>('.btn-combobox-toggle')!;
+      toggleBtn.click();
+
+      const dropdown = page.querySelector<HTMLElement>('.combobox-dropdown')!;
+      expect(dropdown.style.display).toBe('block');
+
+      // Deve mostrar TODOS os ingredientes para permitir troca, sem mensagem de "nenhum encontrado"
+      const items = dropdown.querySelectorAll('.combobox-item');
+      expect(items.length).toBeGreaterThanOrEqual(2);
+      expect(dropdown.querySelector('.combobox-empty')).toBeNull();
+
+      // O item atualmente selecionado deve estar marcado com a classe .selected
+      const selectedItem = dropdown.querySelector('.combobox-item.selected')!;
+      expect(selectedItem).not.toBeNull();
+      expect(selectedItem.getAttribute('data-id')).toBe('ing-01');
+
+      // Seleciona o outro ingrediente (Azeite)
+      const azeiteItem = Array.from(items).find(el => el.getAttribute('data-id') === 'ing-05') as HTMLElement;
+      azeiteItem.click();
+
+      const updatedSearchInput = page.querySelector<HTMLInputElement>('.input-ing-search')!;
+      expect(updatedSearchInput.value).toContain('Azeite de Oliva');
     });
   });
 });

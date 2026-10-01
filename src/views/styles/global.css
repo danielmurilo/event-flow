@@ -1550,7 +1550,7 @@ textarea.form-input {
 
 /* Modal Largo e Builder de Ingredientes para Fichas Técnicas */
 .crud-modal.crud-modal-lg {
-  max-width: 880px;
+  max-width: 960px;
 }
 
 .sheet-ingredients-section {
@@ -1599,7 +1599,7 @@ textarea.form-input {
 
 .sheet-ing-row {
   display: grid;
-  grid-template-columns: 2.2fr 1fr 1fr 1.2fr 1.1fr 36px;
+  grid-template-columns: 2.2fr 1fr 1fr 0.85fr 1.1fr 1.1fr 36px;
   gap: 8px;
   align-items: flex-end;
   background-color: var(--color-surface);
