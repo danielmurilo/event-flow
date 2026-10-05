@@ -10,6 +10,49 @@
   padding: 0;
 }
 
+/* ==========================================================================
+   Custom Minimalist Scrollbar (Dark Mode / Slate tone)
+   Compatibilidade W3C (Firefox) e WebKit (Chrome, Edge, Safari, Opera)
+   ========================================================================== */
+:root {
+  --scrollbar-size: 7px;
+  --scrollbar-track: transparent;
+  --scrollbar-thumb: #334155;
+  --scrollbar-thumb-hover: #475569;
+}
+
+/* W3C standard (Firefox 64+ e navegadores modernos) */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
+
+/* Motores WebKit */
+::-webkit-scrollbar {
+  width: var(--scrollbar-size);
+  height: var(--scrollbar-size);
+}
+
+::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: var(--scrollbar-thumb);
+  border-radius: 9999px;
+  border: 1px solid transparent;
+  background-clip: padding-box;
+  transition: background-color 0.2s ease-in-out;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--scrollbar-thumb-hover);
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
 html {
   font-size: 16px;
   -webkit-text-size-adjust: 100%;
@@ -355,19 +398,27 @@ textarea.form-input {
 /* Área autenticada */
 .app-shell {
   display: flex;
-  min-height: 100dvh;
+  height: 100vh;
+  height: 100dvh;
+  max-height: 100vh;
+  max-height: 100dvh;
   flex-direction: column;
+  overflow: hidden;
 }
 
 .app-header {
   display: flex;
-  min-height: 72px;
+  height: 64px;
+  min-height: 64px;
+  max-height: 64px;
   align-items: center;
   justify-content: space-between;
   gap: var(--spacing-md);
-  padding: var(--spacing-sm) var(--spacing-lg);
+  padding: 0 var(--spacing-lg);
   border-bottom: 1px solid var(--color-outline-variant);
   background-color: var(--color-surface);
+  flex: 0 0 auto;
+  z-index: 10;
 }
 
 .app-brand {
@@ -386,10 +437,14 @@ textarea.form-input {
 
 .app-main {
   width: 100%;
-  max-width: 960px;
-  flex: 1;
+  max-width: 1400px;
+  flex: 1 1 0%;
+  min-height: 0;
   margin: 0 auto;
-  padding: clamp(var(--spacing-2xl), 8vh, 80px) var(--spacing-lg);
+  padding: var(--spacing-md) var(--spacing-lg);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .welcome-card {
@@ -481,7 +536,7 @@ textarea.form-input {
   }
 
   .app-main {
-    padding: var(--spacing-2xl) var(--spacing-md);
+    padding: var(--spacing-sm) var(--spacing-md);
   }
 
   .welcome-card {
@@ -737,7 +792,19 @@ textarea.form-input {
    Dashboard / Events Page
    ========================================================================== */
 .events-page-view,
-.admin-crud-view,
+.admin-crud-view {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  flex: 1 1 0%;
+  gap: var(--spacing-md);
+  max-width: 1400px;
+  width: 100%;
+  margin: 0 auto;
+  overflow: hidden;
+}
+
 .event-details-view {
   display: flex;
   flex-direction: column;
@@ -745,6 +812,9 @@ textarea.form-input {
   max-width: 1200px;
   width: 100%;
   margin: 0 auto;
+  min-height: 0;
+  flex: 1 1 0%;
+  overflow-y: auto;
 }
 
 .page-header-row {
@@ -753,6 +823,7 @@ textarea.form-input {
   justify-content: space-between;
   flex-wrap: wrap;
   gap: var(--spacing-md);
+  flex: 0 0 auto;
 }
 
 .page-title {
@@ -770,10 +841,11 @@ textarea.form-input {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-md);
-  padding: var(--spacing-lg);
+  padding: var(--spacing-md) var(--spacing-lg);
   border-radius: var(--md-sys-shape-corner-large);
   background-color: var(--color-surface);
   border: 1px solid var(--color-outline-variant);
+  flex: 0 0 auto;
 }
 
 .search-input-wrapper {
@@ -823,6 +895,10 @@ textarea.form-input {
 }
 
 .table-container-card {
+  flex: 1 1 0%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
   border-radius: var(--md-sys-shape-corner-large);
   background-color: var(--color-surface);
   border: 1px solid var(--color-outline-variant);
@@ -832,7 +908,11 @@ textarea.form-input {
 
 .table-responsive {
   width: 100%;
+  flex: 1 1 0%;
+  min-height: 0;
+  overflow-y: auto;
   overflow-x: auto;
+  overscroll-behavior: contain;
 }
 
 .events-table {
@@ -843,6 +923,9 @@ textarea.form-input {
 }
 
 .events-table th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
   padding: 12px 14px;
   background-color: var(--color-surface-container-low);
   color: var(--color-on-surface-variant);
