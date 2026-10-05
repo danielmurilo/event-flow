@@ -201,28 +201,28 @@ export function createAdminCrudPage(
             </thead>
             <tbody>
               <tr>
-                <td><strong>${user?.displayName || 'Usuário Atual'}</strong> <small>(Você)</small></td>
-                <td>${user?.email}</td>
-                <td><span class="user-role-badge role-${userRole}">${userRole.toUpperCase()}</span></td>
-                <td><span class="badge-confirmed">Ativo</span></td>
-                <td><code>${tenantId}</code></td>
-                <td><span class="text-muted">Sessão Atual</span></td>
+                <td data-label="Nome"><strong>${user?.displayName || 'Usuário Atual'}</strong> <small>(Você)</small></td>
+                <td data-label="E-mail">${user?.email}</td>
+                <td data-label="Nível de acesso"><span class="user-role-badge role-${userRole}">${userRole.toUpperCase()}</span></td>
+                <td data-label="Status"><span class="badge-confirmed">Ativo</span></td>
+                <td data-label="Empresa"><code>${tenantId}</code></td>
+                <td data-label="Ações"><span class="text-muted">Sessão Atual</span></td>
               </tr>
               <tr>
-                <td><strong>Marcelo Duarte</strong></td>
-                <td>chefe.marcelo@buffet.com</td>
-                <td><span class="user-role-badge role-manager">MANAGER</span></td>
-                <td><span class="badge-confirmed">Ativo</span></td>
-                <td><code>${tenantId}</code></td>
-                <td><button type="button" class="btn btn-ghost btn-sm">Editar</button></td>
+                <td data-label="Nome"><strong>Marcelo Duarte</strong></td>
+                <td data-label="E-mail">chefe.marcelo@buffet.com</td>
+                <td data-label="Nível de acesso"><span class="user-role-badge role-manager">MANAGER</span></td>
+                <td data-label="Status"><span class="badge-confirmed">Ativo</span></td>
+                <td data-label="Empresa"><code>${tenantId}</code></td>
+                <td data-label="Ações"><button type="button" class="btn btn-ghost btn-sm">Editar</button></td>
               </tr>
               <tr>
-                <td><strong>Carlos Silva</strong></td>
-                <td>carlos.logistica@buffet.com</td>
-                <td><span class="user-role-badge role-operator">OPERATOR</span></td>
-                <td><span class="badge-confirmed">Ativo</span></td>
-                <td><code>${tenantId}</code></td>
-                <td><button type="button" class="btn btn-ghost btn-sm">Editar</button></td>
+                <td data-label="Nome"><strong>Carlos Silva</strong></td>
+                <td data-label="E-mail">carlos.logistica@buffet.com</td>
+                <td data-label="Nível de acesso"><span class="user-role-badge role-operator">OPERATOR</span></td>
+                <td data-label="Status"><span class="badge-confirmed">Ativo</span></td>
+                <td data-label="Empresa"><code>${tenantId}</code></td>
+                <td data-label="Ações"><button type="button" class="btn btn-ghost btn-sm">Editar</button></td>
               </tr>
             </tbody>
           </table>
@@ -1773,10 +1773,10 @@ export function createAdminCrudPage(
       items.forEach((cat: DishCategory) => {
         const tr = document.createElement('tr');
         tr.innerHTML = `
-          <td><code>${cat.id}</code></td>
-          <td><strong>${cat.name}</strong></td>
-          <td><span class="tenant-tag">${cat.tenantId}</span></td>
-          <td class="td-actions">
+          <td data-label="Código"><code>${cat.id}</code></td>
+          <td data-label="Categoria"><strong>${cat.name}</strong></td>
+          <td data-label="Empresa"><span class="tenant-tag">${cat.tenantId}</span></td>
+          <td class="td-actions" data-label="Ações">
             <button type="button" class="btn btn-ghost btn-sm btn-edit" data-id="${cat.id}">Editar</button>
             <button type="button" class="btn btn-ghost btn-sm btn-delete" data-id="${cat.id}" style="color: var(--color-error);">Excluir</button>
           </td>
@@ -1817,12 +1817,12 @@ export function createAdminCrudPage(
       items.forEach((ing: Ingredient) => {
         const tr = document.createElement('tr');
         tr.innerHTML = `
-          <td><strong>${ing.name}</strong></td>
-          <td>${ing.brand || '-'}</td>
-          <td><span class="badge-neutral">${ing.measurement_unity}</span></td>
-          <td><strong>R$ ${ing.cost.toFixed(2)}</strong></td>
-          <td><small>${ing.total_yield_homemade_measure || '-'}</small></td>
-          <td class="td-actions">
+          <td data-label="Ingrediente"><strong>${ing.name}</strong></td>
+          <td data-label="Marca">${ing.brand || '-'}</td>
+          <td data-label="Unidade"><span class="badge-neutral">${ing.measurement_unity}</span></td>
+          <td data-label="Custo unitário"><strong>R$ ${ing.cost.toFixed(2)}</strong></td>
+          <td data-label="Medida caseira"><small>${ing.total_yield_homemade_measure || '-'}</small></td>
+          <td class="td-actions" data-label="Ações">
             <button type="button" class="btn btn-ghost btn-sm btn-edit" data-id="${ing.id}">Editar</button>
             <button type="button" class="btn btn-ghost btn-sm btn-delete" data-id="${ing.id}" style="color: var(--color-error);">Excluir</button>
           </td>
@@ -1870,23 +1870,23 @@ export function createAdminCrudPage(
 
         const tr = document.createElement('tr');
         tr.innerHTML = `
-          <td>
+          <td data-label="Preparação">
             <strong>${sheet.name}</strong>
             ${sheet.is_pre_preparation ? `<span class="badge-subproduct" style="margin-left: 6px;">${sheet.subproduct_code || 'Pré-preparo'}</span>` : ''}
           </td>
-          <td><span class="category-tag">${catName}</span></td>
-          <td>${sheet.total_yield} ${sheet.total_yield_measurement_unity}</td>
-          <td>
+          <td data-label="Categoria"><span class="category-tag">${catName}</span></td>
+          <td data-label="Rendimento">${sheet.total_yield} ${sheet.total_yield_measurement_unity}</td>
+          <td data-label="Ingredientes">
             <span class="category-tag" style="background: var(--color-surface-container); color: var(--color-on-surface);">
               ${ingCount} ${ingCount === 1 ? 'insumo' : 'insumos'}
             </span>
           </td>
-          <td>
+          <td data-label="Custo calculado">
             <strong>R$ ${sheet.total_yield_cost ? sheet.total_yield_cost.toFixed(2) : '0.00'}</strong>
             <br>
             <small class="text-muted">R$ ${costPerUnit.toFixed(2)} / ${sheet.total_yield_measurement_unity}</small>
           </td>
-          <td class="td-actions">
+          <td class="td-actions" data-label="Ações">
             <div class="table-actions-group">
               <button type="button" class="btn-icon-action btn-edit" data-id="${sheet.id}" title="Editar Ficha Técnica" aria-label="Editar Ficha Técnica">
                 ${ICONS.pencil}
@@ -1944,11 +1944,11 @@ export function createAdminCrudPage(
 
         const tr = document.createElement('tr');
         tr.innerHTML = `
-          <td><code>${dish.id}</code></td>
-          <td><strong>${dish.name}</strong></td>
-          <td>${sheetBadges}</td>
-          <td>${extrasText}</td>
-          <td class="td-actions">
+          <td data-label="Código"><code>${dish.id}</code></td>
+          <td data-label="Prato"><strong>${dish.name}</strong></td>
+          <td data-label="Fichas técnicas">${sheetBadges}</td>
+          <td data-label="Ingredientes extras">${extrasText}</td>
+          <td class="td-actions" data-label="Ações">
             <button type="button" class="btn btn-ghost btn-sm btn-edit" data-id="${dish.id}">Editar</button>
             <button type="button" class="btn btn-ghost btn-sm btn-delete" data-id="${dish.id}" style="color: var(--color-error);">Excluir</button>
           </td>

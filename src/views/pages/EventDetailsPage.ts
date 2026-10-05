@@ -138,16 +138,16 @@ export function createEventDetailsPage(
 
       <!-- Navegação por Abas -->
       <nav class="details-tabs" aria-label="Seções do evento">
-        <button type="button" class="tab-btn is-active" data-tab="tab-overview">
+        <button type="button" class="tab-btn is-active" data-tab="tab-overview" aria-pressed="true">
           ${ICONS.calendar} Dados Gerais & Logística
         </button>
-        <button type="button" class="tab-btn" data-tab="tab-menu">
+        <button type="button" class="tab-btn" data-tab="tab-menu" aria-pressed="false">
           ${ICONS.utensils} Serviços & Cardápio (${event.event_services?.length || 0})
         </button>
-        <button type="button" class="tab-btn" data-tab="tab-checklist">
+        <button type="button" class="tab-btn" data-tab="tab-checklist" aria-pressed="false">
           ${ICONS.check} Checklist Expedição & Volta
         </button>
-        <button type="button" class="tab-btn" data-tab="tab-support">
+        <button type="button" class="tab-btn" data-tab="tab-support" aria-pressed="false">
           ${ICONS.box} Materiais & Caixa Seca
         </button>
       </nav>
@@ -265,11 +265,11 @@ export function createEventDetailsPage(
                 <tbody id="checklist-tbody">
                   ${checklistItems.map((item, idx) => `
                     <tr class="checklist-row ${item.expeditionCheck ? 'row-checked-exp' : ''}">
-                      <td><strong>${item.name}</strong></td>
-                      <td><span class="category-tag">${item.category}</span></td>
-                      <td>${item.unit}</td>
-                      <td>${item.planned}</td>
-                      <td class="td-center">
+                      <td data-label="Item"><strong>${item.name}</strong></td>
+                      <td data-label="Categoria"><span class="category-tag">${item.category}</span></td>
+                      <td data-label="Unidade">${item.unit}</td>
+                      <td data-label="Planejado">${item.planned}</td>
+                      <td class="td-center" data-label="Quantidade na saída">
                         <input
                           type="number"
                           class="form-control table-input"
@@ -279,16 +279,19 @@ export function createEventDetailsPage(
                           aria-label="Quantidade saída de ${item.name}"
                         />
                       </td>
-                      <td class="td-center">
-                        <input
-                          type="checkbox"
-                          class="chk-expedition-box"
+                      <td class="td-center" data-label="Conferir saída">
+                        <label class="checklist-check-target">
+                          <input
+                            type="checkbox"
+                            class="chk-expedition-box"
                           data-idx="${idx}"
                           ${item.expeditionCheck ? 'checked' : ''}
                           aria-label="Confirmar saída de ${item.name}"
-                        />
+                          />
+                          <span>Conferido</span>
+                        </label>
                       </td>
-                      <td class="td-center">
+                      <td class="td-center" data-label="Quantidade no retorno">
                         <input
                           type="number"
                           class="form-control table-input"
@@ -298,16 +301,19 @@ export function createEventDetailsPage(
                           aria-label="Quantidade retorno de ${item.name}"
                         />
                       </td>
-                      <td class="td-center">
-                        <input
+                      <td class="td-center" data-label="Conferir retorno">
+                        <label class="checklist-check-target">
+                          <input
                           type="checkbox"
                           class="chk-return-box"
                           data-idx="${idx}"
                           ${item.returnCheck ? 'checked' : ''}
                           aria-label="Confirmar retorno de ${item.name}"
-                        />
+                          />
+                          <span>Conferido</span>
+                        </label>
                       </td>
-                      <td>
+                      <td data-label="Observações">
                         <input
                           type="text"
                           class="form-control table-input"
@@ -357,10 +363,14 @@ export function createEventDetailsPage(
     tabButtons.forEach((btn) => {
       btn.addEventListener('click', () => {
         const targetId = btn.getAttribute('data-tab');
-        tabButtons.forEach((b) => b.classList.remove('is-active'));
-        tabPanes.forEach((p) => p.classList.remove('is-active'));
+        tabButtons.forEach((tabButton) => {
+          tabButton.classList.remove('is-active');
+          tabButton.setAttribute('aria-pressed', 'false');
+        });
+        tabPanes.forEach((pane) => pane.classList.remove('is-active'));
 
         btn.classList.add('is-active');
+        btn.setAttribute('aria-pressed', 'true');
         container.querySelector<HTMLElement>(`#${targetId}`)?.classList.add('is-active');
       });
     });

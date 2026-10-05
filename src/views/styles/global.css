@@ -1356,6 +1356,10 @@ textarea.form-input {
   accent-color: var(--color-primary);
 }
 
+.checklist-check-target > span {
+  display: none;
+}
+
 .checklist-feedback {
   margin-top: var(--spacing-md);
   padding: var(--spacing-sm) var(--spacing-md);
@@ -2052,4 +2056,588 @@ textarea.form-input {
   color: var(--color-error) !important;
   border-color: rgba(220, 38, 38, 0.25);
   transform: translateY(-1px);
+}
+
+/* Layouts de telefone: manter os dados, priorizando o conteúdo por registro. */
+@media (max-width: 600px) {
+  .events-page-view .table-responsive,
+  .admin-crud-view .table-responsive {
+    overflow-x: hidden;
+  }
+
+  .events-page-view .events-table,
+  .admin-crud-view .events-table {
+    display: block;
+    width: 100%;
+  }
+
+  .events-page-view .events-table thead,
+  .admin-crud-view .events-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .events-page-view .events-table tbody,
+  .admin-crud-view .events-table tbody {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-sm);
+  }
+
+  .events-page-view .events-table tbody tr,
+  .admin-crud-view .events-table tbody tr {
+    display: grid;
+    min-width: 0;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--spacing-sm);
+    padding: var(--spacing-md);
+    border: 1px solid var(--color-outline-variant);
+    border-radius: var(--md-sys-shape-corner-medium);
+    background-color: var(--color-surface-container-high);
+  }
+
+  .events-page-view .events-table tbody td,
+  .admin-crud-view .events-table tbody td {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-xxs);
+    padding: 0;
+    border: 0;
+    overflow-wrap: anywhere;
+    white-space: normal;
+  }
+
+  .events-page-view .events-table tbody td::before,
+  .admin-crud-view .events-table tbody td::before {
+    color: var(--color-on-surface-variant);
+    content: attr(data-label);
+    font-size: 0.8125rem;
+    font-weight: 500;
+  }
+
+  .admin-crud-view .events-table tbody td.td-actions {
+    width: auto;
+    text-align: left;
+    grid-column: 1 / -1;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--spacing-xs);
+    padding-top: var(--spacing-xs);
+    border-top: 1px solid var(--color-outline-variant);
+  }
+
+  .events-page-view .events-table tbody tr {
+    grid-template-areas:
+      'event event'
+      'start end'
+      'responsible status'
+      'action action';
+  }
+
+  .events-page-view .events-table .td-name {
+    grid-area: event;
+  }
+
+  .events-page-view .events-table .td-date-start {
+    grid-area: start;
+  }
+
+  .events-page-view .events-table .td-date-end {
+    grid-area: end;
+  }
+
+  .events-page-view .events-table .td-responsible {
+    grid-area: responsible;
+  }
+
+  .events-page-view .events-table .td-status {
+    grid-area: status;
+  }
+
+  .events-page-view .events-table td.td-actions {
+    grid-area: action;
+    width: 100%;
+    text-align: left;
+    padding-top: var(--spacing-xs);
+    border-top: 1px solid var(--color-outline-variant);
+  }
+
+  .events-page-view .events-table .td-actions .btn-view-event {
+    width: 100%;
+  }
+
+  .filter-chip {
+    min-height: 48px;
+    padding-block: var(--spacing-xs);
+  }
+
+  .details-top-bar {
+    align-items: stretch;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+  }
+
+  .details-top-bar .btn-back {
+    width: 100%;
+    min-height: 48px;
+    justify-content: flex-start;
+  }
+
+  .details-top-bar .tenant-tag {
+    display: block;
+    max-width: 100%;
+    text-align: left;
+    overflow-wrap: anywhere;
+    word-break: normal;
+  }
+
+  .details-grid,
+  .dishes-grid,
+  .support-materials-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .detail-card,
+  .dish-item-card,
+  .support-category-card {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .meta-definition-list {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--spacing-xxs);
+  }
+
+  .meta-definition-list dd {
+    margin-bottom: var(--spacing-xs);
+    overflow-wrap: anywhere;
+  }
+
+  .details-tabs {
+    display: grid;
+    width: 100%;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--spacing-xxs);
+    overflow: visible;
+    border-bottom: 0;
+  }
+
+  .tab-btn {
+    min-width: 0;
+    min-height: 64px;
+    justify-content: flex-start;
+    padding: var(--spacing-xs);
+    border: 1px solid var(--color-outline-variant);
+    border-radius: var(--md-sys-shape-corner-small);
+    font-size: 0.8125rem;
+    line-height: 1.25;
+    text-align: left;
+    white-space: normal;
+  }
+
+  .tab-btn.is-active {
+    border-color: var(--color-primary);
+    background-color: var(--color-primary-container);
+    color: var(--color-on-primary-container);
+  }
+
+  .tab-btn svg {
+    width: 20px;
+    height: 20px;
+    flex: 0 0 auto;
+  }
+
+  .tabs-content-area {
+    min-width: 0;
+  }
+
+  .checklist-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .checklist-actions,
+  .checklist-actions .btn {
+    width: 100%;
+  }
+
+  .checklist-table,
+  .checklist-table tbody {
+    display: block;
+    width: 100%;
+  }
+
+  .checklist-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .checklist-table tbody tr {
+    display: grid;
+    min-width: 0;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--spacing-sm);
+    margin-bottom: var(--spacing-sm);
+    padding: var(--spacing-md);
+    border: 1px solid var(--color-outline-variant);
+    border-radius: var(--md-sys-shape-corner-medium);
+    background-color: var(--color-surface-container-high);
+  }
+
+  .checklist-table tbody td {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--spacing-xxs);
+    padding: 0;
+    border: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .checklist-table tbody td::before {
+    color: var(--color-on-surface-variant);
+    content: attr(data-label);
+    font-size: 0.8125rem;
+    font-weight: 500;
+  }
+
+  .checklist-table tbody td:nth-child(1),
+  .checklist-table tbody td:nth-child(2),
+  .checklist-table tbody td:nth-child(9) {
+    grid-column: 1 / -1;
+  }
+
+  .checklist-table .table-input {
+    width: 100% !important;
+    min-height: 48px;
+    height: 48px;
+    font-size: 16px;
+  }
+
+  .checklist-check-target {
+    display: flex;
+    min-height: 48px;
+    align-items: center;
+    gap: var(--spacing-xs);
+    padding-inline: var(--spacing-xs);
+    border-radius: var(--md-sys-shape-corner-small);
+  color: var(--color-on-surface);
+  cursor: pointer;
+}
+
+  .checklist-check-target > span {
+    display: inline;
+  }
+
+  .chk-expedition-box,
+  .chk-return-box {
+    width: 24px;
+    height: 24px;
+    flex: 0 0 auto;
+  }
+
+  /* Modais longos: um único eixo de rolagem no formulário. */
+  .crud-modal-backdrop {
+    align-items: stretch;
+    justify-content: center;
+    padding: max(var(--spacing-xs), env(safe-area-inset-top))
+      max(var(--spacing-xs), env(safe-area-inset-right))
+      max(var(--spacing-xs), env(safe-area-inset-bottom))
+      max(var(--spacing-xs), env(safe-area-inset-left));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .crud-modal,
+  .crud-modal.crud-modal-lg {
+    width: 100%;
+    max-width: 100%;
+    max-height: calc(100dvh - var(--spacing-md));
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .crud-modal > form {
+    display: flex;
+    min-height: 0;
+    flex: 1 1 auto;
+    flex-direction: column;
+  }
+
+  .crud-modal-header,
+  .crud-modal-footer {
+    flex: 0 0 auto;
+    padding: var(--spacing-sm) var(--spacing-md);
+  }
+
+  .crud-modal-header .icon-button {
+    min-width: 48px;
+    min-height: 48px;
+  }
+
+  .crud-modal-body {
+    min-height: 0;
+    flex: 1 1 auto;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: var(--spacing-md);
+  }
+
+  .crud-modal-footer .btn {
+    min-width: 0;
+    min-height: 48px;
+    flex: 1 1 0;
+    padding-inline: var(--spacing-sm);
+    white-space: normal;
+  }
+
+  .crud-modal.crud-modal-lg .crud-modal-title {
+    padding-right: var(--spacing-sm);
+  }
+
+  .sheet-ingredients-section {
+    min-height: 0;
+    flex: 0 0 auto;
+    padding: var(--spacing-md);
+  }
+
+  .sheet-ingredients-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .sheet-ingredients-header > div:last-child {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .sheet-ingredients-header .btn {
+    width: 100%;
+    min-height: 48px;
+    height: auto;
+    white-space: normal;
+  }
+
+  .sheet-ingredients-list {
+    min-height: 0;
+    max-height: none;
+    overflow: visible;
+    padding-right: 0;
+  }
+
+  .sheet-ing-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--spacing-xs);
+    padding: var(--spacing-sm);
+    box-shadow: none;
+  }
+
+  .sheet-ing-row > div {
+    min-width: 0;
+  }
+
+  .sheet-ing-row .sheet-ing-col-name,
+  .sheet-ing-row .sheet-ing-col-measure,
+  .sheet-ing-row .sheet-ing-col-action {
+    grid-column: 1 / -1;
+  }
+
+  .sheet-ing-row .form-label-xs {
+    min-height: 2.25em;
+    font-size: 0.8125rem;
+    line-height: 1.25;
+    white-space: normal;
+  }
+
+  .sheet-ing-row .form-control-sm {
+    width: 100%;
+    min-height: 48px;
+    height: 48px;
+    padding-inline: var(--spacing-xs);
+    font-size: 16px;
+  }
+
+  .sheet-ing-row .sheet-ing-col-action {
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  .btn-icon-delete-row {
+    width: 48px;
+    height: 48px;
+    flex: 0 0 auto;
+  }
+
+  /* O menu segue o fluxo para não ser cortado pela seção rolável. */
+  .searchable-combobox {
+    min-width: 0;
+    position: static;
+  }
+
+  .combobox-input-wrapper input {
+    min-width: 0;
+    padding-right: 52px;
+    font-size: 16px;
+  }
+
+  .btn-combobox-toggle {
+    top: 50%;
+    right: 0;
+    width: 48px;
+    height: 48px;
+    padding: 0;
+    transform: translateY(-50%);
+  }
+
+  .btn-combobox-toggle svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .combobox-dropdown {
+    position: static;
+    inset: auto;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    margin-top: var(--spacing-xs);
+    overflow: hidden;
+  }
+
+  .combobox-items-list {
+    max-height: min(36dvh, 240px);
+    overscroll-behavior: contain;
+  }
+
+  .combobox-item {
+    min-height: 56px;
+    flex-wrap: wrap;
+    padding: var(--spacing-sm) var(--spacing-md);
+  }
+
+  .combobox-item-main {
+    min-width: 0;
+    flex: 1 1 100%;
+    overflow: visible;
+  }
+
+  .combobox-item-name {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .combobox-item-meta {
+    width: 100%;
+    flex-wrap: wrap;
+    font-size: 0.8125rem;
+  }
+
+  .combobox-tabs {
+    gap: var(--spacing-xxs);
+  }
+
+  .combobox-tab-btn {
+    min-width: 0;
+    min-height: 48px;
+    padding: var(--spacing-xxs);
+    font-size: 0.8125rem;
+    white-space: normal;
+  }
+
+  .btn-combobox-quick-add {
+    min-height: 48px;
+    padding: var(--spacing-xs);
+    font-size: 0.875rem;
+  }
+
+  .checkbox-item {
+    min-height: 48px;
+  }
+
+  .checkbox-item input[type='checkbox'] {
+    width: 24px;
+    height: 24px;
+    flex: 0 0 auto;
+  }
+
+  .btn-icon-action {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
+    max-width: none;
+    max-height: none;
+  }
+}
+
+@media (max-width: 380px) {
+  .combobox-tabs {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .combobox-tab-btn:nth-child(3) {
+    grid-column: 1 / -1;
+  }
+
+  .app-header {
+    gap: var(--spacing-xxs);
+    padding-right: max(var(--spacing-xs), env(safe-area-inset-right));
+    padding-left: max(var(--spacing-xs), env(safe-area-inset-left));
+  }
+
+  .app-header-actions {
+    gap: 0;
+  }
+
+  .app-main {
+    padding-right: var(--spacing-xs);
+    padding-left: var(--spacing-xs);
+  }
+}
+
+@media (max-width: 600px) {
+  .app-header {
+    padding-top: env(safe-area-inset-top);
+    padding-right: max(var(--spacing-md), env(safe-area-inset-right));
+    padding-left: max(var(--spacing-md), env(safe-area-inset-left));
+  }
+
+  .events-page-view .btn-sm,
+  .admin-crud-view .btn-sm {
+    min-height: 48px;
+    height: auto;
+    padding: var(--spacing-xs) var(--spacing-md);
+    font-size: 0.875rem;
+  }
+
+  .events-page-view .status-badge,
+  .admin-crud-view .status-badge,
+  .events-page-view .user-role-badge,
+  .admin-crud-view .user-role-badge,
+  .events-page-view .tenant-tag,
+  .admin-crud-view .tenant-tag {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
 }

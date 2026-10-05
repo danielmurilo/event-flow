@@ -215,10 +215,10 @@ export function createEventsPage(repository: IEventRepository = eventRepository)
       const responsible = evt.responsible_client || evt.responsible_employee_id || 'Não informado';
 
       tr.innerHTML = `
-        <td class="td-date-start">
+        <td class="td-date-start" data-label="Início">
           <strong>${formatDateTime(evt.date_time_start)}</strong>
         </td>
-        <td class="td-name">
+        <td class="td-name" data-label="Evento">
           <div class="event-name-block">
             <span class="event-title">${evt.name}</span>
             <span class="event-location" title="${evt.location}">
@@ -227,17 +227,17 @@ export function createEventsPage(repository: IEventRepository = eventRepository)
             </span>
           </div>
         </td>
-        <td class="td-responsible">
+        <td class="td-responsible" data-label="Responsável">
           <span class="responsible-tag">${responsible}</span>
           ${evt.guests_number ? `<span class="guests-tag">${evt.guests_number} pax</span>` : ''}
         </td>
-        <td class="td-date-end">
+        <td class="td-date-end" data-label="Término">
           <span>${formatDateTime(evt.date_time_end)}</span>
         </td>
-        <td class="td-status">
+        <td class="td-status" data-label="Status">
           <span class="status-badge ${statusMeta.className}">${statusMeta.label}</span>
         </td>
-        <td class="td-actions">
+        <td class="td-actions" data-label="Ação">
           <button type="button" class="btn btn-sm btn-ghost btn-view-event" aria-label="Acessar ${evt.name}">
             Detalhes →
           </button>

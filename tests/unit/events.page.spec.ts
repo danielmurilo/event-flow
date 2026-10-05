@@ -104,6 +104,8 @@ describe('Event Flow - Módulos de Interface e Navegação', () => {
       expect(firstRow.querySelector('.responsible-tag')?.textContent).toBe('Sofia Vasconcelos');
       expect(firstRow.querySelector('.td-date-end')?.textContent).toContain('21/11/2026');
       expect(firstRow.querySelector('.status-badge')?.textContent).toBe('Confirmado');
+      expect(firstRow.querySelector('.td-date-start')?.getAttribute('data-label')).toBe('Início');
+      expect(firstRow.querySelector('.td-actions')?.getAttribute('data-label')).toBe('Ação');
     });
 
     it('deve acionar router.navigate para /events/:id ao clicar em uma linha', async () => {
@@ -184,6 +186,15 @@ describe('Event Flow - Módulos de Interface e Navegação', () => {
       expect(page.querySelector('[data-tab="tab-menu"]')).not.toBeNull();
       expect(page.querySelector('[data-tab="tab-checklist"]')).not.toBeNull();
       expect(page.querySelector('[data-tab="tab-support"]')).not.toBeNull();
+      expect(page.querySelectorAll('.details-tabs .tab-btn')).toHaveLength(4);
+      expect(page.querySelector('[data-tab="tab-overview"]')?.getAttribute('aria-pressed')).toBe('true');
+      expect(page.querySelector('#checklist-tbody .checklist-row [data-label="Item"]')).not.toBeNull();
+      expect(page.querySelector('#checklist-tbody .checklist-row [data-label="Quantidade na saída"]')).not.toBeNull();
+
+      const checklistTab = page.querySelector<HTMLButtonElement>('[data-tab="tab-checklist"]')!;
+      checklistTab.click();
+      expect(checklistTab.getAttribute('aria-pressed')).toBe('true');
+      expect(page.querySelector('#tab-checklist')?.classList.contains('is-active')).toBe(true);
     });
 
     it('deve permitir alterar o status do evento', async () => {

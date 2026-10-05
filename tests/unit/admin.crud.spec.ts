@@ -189,6 +189,8 @@ describe('CRUD Administrativo - Repositórios & Formulários Firestore', () => {
 
       const modal = page.querySelector<HTMLElement>('#crud-modal-overlay')!;
       expect(modal.classList.contains('is-open')).toBe(true);
+      expect(page.querySelector('#crud-table-body td')?.getAttribute('data-label')).toBe('Código');
+      expect(page.querySelector('#crud-table-body td.td-actions')?.getAttribute('data-label')).toBe('Ações');
 
       const inputName = page.querySelector<HTMLInputElement>('#input-cat-name')!;
       inputName.value = 'Massa Fresca & Molhos';
