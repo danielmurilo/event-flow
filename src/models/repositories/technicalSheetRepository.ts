@@ -38,17 +38,30 @@ export class FirestoreTechnicalSheetRepository implements ITechnicalSheetReposit
     const sheets: PreparationTechnicalSheet[] = [];
     snapshot.forEach((docSnap) => {
       const data = docSnap.data();
+      const totalYieldCost = Number(data.total_yield_cost) || 0;
+      const totalYield = Number(data.total_yield) || 1;
+      const costPerServing = data.cost_per_serving !== undefined
+        ? Number(data.cost_per_serving) || 0
+        : (totalYield > 0 ? totalYieldCost / totalYield : 0);
+
       sheets.push({
         id: docSnap.id,
         tenantId: data.tenantId,
         dish_category_id: data.dish_category_id || '',
+        is_pre_preparation: Boolean(data.is_pre_preparation),
+        subproduct_code: data.subproduct_code || '',
         name: data.name || '',
         ingredients: data.ingredients || [],
         preparation_method: data.preparation_method || [],
-        total_yield: Number(data.total_yield) || 1,
+        total_gross_weight: Number(data.total_gross_weight) || 0,
+        total_net_weight: Number(data.total_net_weight) || 0,
+        total_yield: totalYield,
         total_yield_measurement_unity: data.total_yield_measurement_unity || 'porções',
         total_yield_weight: Number(data.total_yield_weight) || 0,
-        total_yield_cost: Number(data.total_yield_cost) || 0
+        total_yield_cost: totalYieldCost,
+        cost_per_serving: costPerServing,
+        createdAt: data.createdAt,
+        updatedAt: data.updatedAt
       });
     });
 
@@ -63,17 +76,30 @@ export class FirestoreTechnicalSheetRepository implements ITechnicalSheetReposit
     const data = snap.data();
     if (data.tenantId !== tenantId) return null;
 
+    const totalYieldCost = Number(data.total_yield_cost) || 0;
+    const totalYield = Number(data.total_yield) || 1;
+    const costPerServing = data.cost_per_serving !== undefined
+      ? Number(data.cost_per_serving) || 0
+      : (totalYield > 0 ? totalYieldCost / totalYield : 0);
+
     return {
       id: snap.id,
       tenantId: data.tenantId,
       dish_category_id: data.dish_category_id || '',
+      is_pre_preparation: Boolean(data.is_pre_preparation),
+      subproduct_code: data.subproduct_code || '',
       name: data.name || '',
       ingredients: data.ingredients || [],
       preparation_method: data.preparation_method || [],
-      total_yield: Number(data.total_yield) || 1,
+      total_gross_weight: Number(data.total_gross_weight) || 0,
+      total_net_weight: Number(data.total_net_weight) || 0,
+      total_yield: totalYield,
       total_yield_measurement_unity: data.total_yield_measurement_unity || 'porções',
       total_yield_weight: Number(data.total_yield_weight) || 0,
-      total_yield_cost: Number(data.total_yield_cost) || 0
+      total_yield_cost: totalYieldCost,
+      cost_per_serving: costPerServing,
+      createdAt: data.createdAt,
+      updatedAt: data.updatedAt
     };
   }
 
@@ -86,13 +112,19 @@ export class FirestoreTechnicalSheetRepository implements ITechnicalSheetReposit
     await setDoc(docRef, {
       tenantId: sheet.tenantId,
       dish_category_id: sheet.dish_category_id,
+      is_pre_preparation: Boolean(sheet.is_pre_preparation),
+      subproduct_code: sheet.subproduct_code || '',
       name: sheet.name,
       ingredients: sheet.ingredients || [],
       preparation_method: sheet.preparation_method || [],
+      total_gross_weight: Number(sheet.total_gross_weight) || 0,
+      total_net_weight: Number(sheet.total_net_weight) || 0,
       total_yield: Number(sheet.total_yield) || 1,
       total_yield_measurement_unity: sheet.total_yield_measurement_unity || 'porções',
       total_yield_weight: Number(sheet.total_yield_weight) || 0,
-      total_yield_cost: Number(sheet.total_yield_cost) || 0
+      total_yield_cost: Number(sheet.total_yield_cost) || 0,
+      cost_per_serving: Number(sheet.cost_per_serving) || 0,
+      updatedAt: new Date().toISOString()
     }, { merge: true });
   }
 

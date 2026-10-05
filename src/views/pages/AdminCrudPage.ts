@@ -6,9 +6,24 @@ import { categoryRepository, ICategoryRepository } from '@/models/repositories/c
 import { ingredientRepository, IIngredientRepository } from '@/models/repositories/ingredientRepository';
 import { technicalSheetRepository, ITechnicalSheetRepository } from '@/models/repositories/technicalSheetRepository';
 import { dishRepository, IDishRepository } from '@/models/repositories/dishRepository';
-import { DishCategory, Ingredient, TechnicalSheetIngredient, PreparationTechnicalSheet, Dish } from '@/models/types/recipe.types';
+import {
+  DishCategory,
+  Ingredient,
+  TechnicalSheetIngredientItem,
+  IngredientSourceType,
+  PreparationTechnicalSheet,
+  Dish
+} from '@/models/types/recipe.types';
+import {
+  calculateCorrectionFactor,
+  calculateItemCost,
+  hasCycle,
+  getAvailableSubproducts,
+  propagateSubproductCostUpdate
+} from '@/services/recipe/technicalSheetService';
 
 export const INITIAL_CATEGORIES: DishCategory[] = [
+  { id: 'cat-pre', tenantId: 'default-tenant', name: 'Pré-preparos & Bases de Produção', is_pre_preparation: true },
   { id: 'cat-01', tenantId: 'default-tenant', name: 'Entradas & Finger Foods' },
   { id: 'cat-02', tenantId: 'default-tenant', name: 'Pratos Principais (Carnes Nobres)' },
   { id: 'cat-03', tenantId: 'default-tenant', name: 'Acompanhamentos & Risotos' },
@@ -454,7 +469,7 @@ export function createAdminCrudPage(
   let cachedCategories: DishCategory[] = [];
   let cachedIngredients: Ingredient[] = [];
   let cachedTechSheets: PreparationTechnicalSheet[] = [];
-  let modalSheetIngredients: TechnicalSheetIngredient[] = [];
+  let modalSheetIngredients: TechnicalSheetIngredientItem[] = [];
   let refreshSheetIngredientsFn: (() => void) | null = null;
   let updateCalculatedCostFn: (() => void) | null = null;
 
@@ -485,20 +500,35 @@ export function createAdminCrudPage(
         const gross = modalSheetIngredients[activeQuickIngRowIndex].gross_weight || net;
         const fc = net > 0 ? Number((gross / net).toFixed(2)) : 1.0;
         const cost = Number((gross * newIng.cost).toFixed(2));
+        modalSheetIngredients[activeQuickIngRowIndex].source_type = 'raw_material';
+        modalSheetIngredients[activeQuickIngRowIndex].source_id = newId;
         modalSheetIngredients[activeQuickIngRowIndex].ingredient_id = newId;
+        modalSheetIngredients[activeQuickIngRowIndex].name = newIng.name;
+        modalSheetIngredients[activeQuickIngRowIndex].brand_or_tag = newIng.brand || '';
+        modalSheetIngredients[activeQuickIngRowIndex].measurement_unity = newIng.measurement_unity;
+        modalSheetIngredients[activeQuickIngRowIndex].unit_cost = newIng.cost;
         modalSheetIngredients[activeQuickIngRowIndex].net_weight = net;
         modalSheetIngredients[activeQuickIngRowIndex].gross_weight = gross;
         modalSheetIngredients[activeQuickIngRowIndex].correction_factor = fc;
+        modalSheetIngredients[activeQuickIngRowIndex].calculated_cost = cost;
         modalSheetIngredients[activeQuickIngRowIndex].cost = cost;
       } else if (isTechSheet) {
         const net = 1.0;
         const gross = 1.0;
         const cost = Number((gross * newIng.cost).toFixed(2));
         modalSheetIngredients.push({
+          id: `item-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`,
+          source_type: 'raw_material',
+          source_id: newId,
           ingredient_id: newId,
+          name: newIng.name,
+          brand_or_tag: newIng.brand || '',
+          measurement_unity: newIng.measurement_unity,
           net_weight: net,
           gross_weight: gross,
           correction_factor: 1.0,
+          unit_cost: newIng.cost,
+          calculated_cost: cost,
           homemade_measure: '',
           cost
         });
@@ -623,6 +653,60 @@ export function createAdminCrudPage(
       `;
     } else if (isTechSheet) {
       modalOverlay.querySelector('.crud-modal')?.classList.add('crud-modal-lg');
+      if (cachedTechSheets.length === 0 && currentItems.length > 0) {
+        cachedTechSheets = [...currentItems];
+      }
+
+      const mapItemToModel = (it: any): TechnicalSheetIngredientItem => {
+        const source_id = it.source_id || it.ingredient_id || it.ingredientId || it.id || '';
+        const isSub = it.source_type === 'subproduct';
+        let name = it.name || '';
+        let brandOrTag = it.brand_or_tag || (isSub ? 'Subproduto' : '');
+        let unit = it.measurement_unity || it.unit;
+        let unit_cost = Number(it.unit_cost) || 0;
+
+        if (isSub) {
+          const sub = cachedTechSheets.find(s => s.id === source_id);
+          if (sub) {
+            name = name || sub.name;
+            brandOrTag = 'Subproduto';
+            unit = unit || sub.total_yield_measurement_unity;
+            unit_cost = unit_cost || (sub.cost_per_serving !== undefined ? sub.cost_per_serving : (sub.total_yield > 0 ? sub.total_yield_cost / sub.total_yield : 0));
+          }
+        } else {
+          const ing = cachedIngredients.find(i => i.id === source_id) || INITIAL_INGREDIENTS.find(i => i.id === source_id);
+          if (ing) {
+            name = name || ing.name;
+            brandOrTag = brandOrTag || ing.brand || '';
+            unit = unit || ing.measurement_unity;
+            unit_cost = unit_cost || ing.cost;
+          }
+        }
+
+        const gross = parseNumber(it.gross_weight ?? it.grossWeight, 0);
+        const net = parseNumber(it.net_weight ?? it.netWeight, 0);
+        const fc = (net > 0 && gross > 0) ? calculateCorrectionFactor(gross, net) : (Number(it.correction_factor) || 1.0);
+        const calcCost = it.calculated_cost !== undefined
+          ? parseNumber(it.calculated_cost, 0)
+          : (it.cost !== undefined ? parseNumber(it.cost, 0) : calculateItemCost(gross, unit_cost));
+
+        return {
+          id: it.id || `item-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`,
+          source_type: isSub ? 'subproduct' : 'raw_material',
+          source_id,
+          ingredient_id: source_id,
+          name,
+          brand_or_tag: brandOrTag,
+          measurement_unity: (unit as any) || 'kg',
+          gross_weight: gross,
+          net_weight: net,
+          correction_factor: fc,
+          unit_cost,
+          calculated_cost: calcCost,
+          cost: calcCost,
+          homemade_measure: it.homemade_measure || it.homemadeMeasure || ''
+        };
+      };
 
       let rawIngs = itemToEdit?.ingredients;
       if (typeof rawIngs === 'string') {
@@ -632,20 +716,14 @@ export function createAdminCrudPage(
         rawIngs = Object.values(rawIngs);
       }
       if (Array.isArray(rawIngs) && rawIngs.length > 0) {
-        modalSheetIngredients = rawIngs.map((it: any) => ({
-          ingredient_id: it.ingredient_id || it.ingredientId || it.id || '',
-          gross_weight: parseNumber(it.gross_weight ?? it.grossWeight, 0),
-          net_weight: parseNumber(it.net_weight ?? it.netWeight, 0),
-          homemade_measure: it.homemade_measure || it.homemadeMeasure || '',
-          cost: parseNumber(it.cost, 0)
-        }));
+        modalSheetIngredients = rawIngs.map(mapItemToModel);
       } else if (itemToEdit) {
         // Se a ficha técnica veio sem ingredientes (por exemplo, registros iniciais salvos no Firestore anteriormente)
         const seedMatch = INITIAL_TECHNICAL_SHEETS.find(
           s => s.id === itemToEdit.id || s.name.toLowerCase() === (itemToEdit.name || '').toLowerCase()
         );
         if (seedMatch && seedMatch.ingredients && seedMatch.ingredients.length > 0) {
-          modalSheetIngredients = seedMatch.ingredients.map(it => ({ ...it }));
+          modalSheetIngredients = seedMatch.ingredients.map(mapItemToModel);
         } else {
           modalSheetIngredients = [];
         }
@@ -671,10 +749,26 @@ export function createAdminCrudPage(
             <option value="">Selecione uma categoria...</option>
             ${cachedCategories.map(c => `
               <option value="${c.id}" ${itemToEdit?.dish_category_id === c.id ? 'selected' : ''}>
-                ${c.name}
+                ${c.name}${c.is_pre_preparation ? ' (Pré-preparos / Bases)' : ''}
               </option>
             `).join('')}
           </select>
+        </div>
+        <div class="form-group" style="margin-top: -6px;">
+          <div style="background: var(--color-surface-container); padding: 12px 14px; border-radius: var(--md-sys-shape-corner-medium); border: 1px solid var(--color-outline-variant);">
+            <label for="check-sheet-is-pre-prep" style="font-weight: 600; font-size: 0.88rem; cursor: pointer; display: flex; align-items: center; gap: 8px; margin-bottom: 0;">
+              <input
+                type="checkbox"
+                id="check-sheet-is-pre-prep"
+                ${itemToEdit?.is_pre_preparation ? 'checked' : ''}
+                style="width: 16px; height: 16px; cursor: pointer;"
+              />
+              Pré-preparo / Subproduto (Base de Produção)
+            </label>
+            <span class="text-muted" style="font-size: 0.78rem; display: block; margin-top: 4px; margin-left: 24px;">
+              Permite que esta receita seja utilizada como insumo ou componente em outras fichas técnicas. O código do subproduto (ex: SB ${itemToEdit?.name || '...'}) é gerado automaticamente ao salvar.
+            </span>
+          </div>
         </div>
         <div class="form-grid-2">
           <div class="form-group">
@@ -707,7 +801,7 @@ export function createAdminCrudPage(
             <div>
               <h4>Ingredientes & Insumos da Receita *</h4>
               <p class="text-muted" style="font-size: 0.8rem; margin: 0;">
-                Busque pelo nome do ingrediente ou cadastre novos insumos diretamente na receita.
+                Busque pelo nome do ingrediente ou subproduto cadastrado, ou cadastre novos insumos diretamente.
               </p>
             </div>
             <div style="display: flex; gap: 8px; flex-wrap: wrap;">
@@ -715,7 +809,7 @@ export function createAdminCrudPage(
                 <span class="btn-icon">${ICONS.plus}</span> Novo Insumo no Catálogo
               </button>
               <button type="button" id="btn-add-sheet-ingredient" class="btn btn-primary btn-sm">
-                <span class="btn-icon">${ICONS.plus}</span> Adicionar Ingrediente
+                <span class="btn-icon">${ICONS.plus}</span> Adicionar Ingrediente / Subproduto
               </button>
             </div>
           </div>
@@ -776,8 +870,25 @@ export function createAdminCrudPage(
         </div>
       `;
 
+      // Automação ao trocar categoria para Pré-preparos
+      const catSelect = modalFields.querySelector<HTMLSelectElement>('#select-sheet-cat');
+      const isPrePrepCheck = modalFields.querySelector<HTMLInputElement>('#check-sheet-is-pre-prep');
+
+      catSelect?.addEventListener('change', () => {
+        const selectedCat = cachedCategories.find(c => c.id === catSelect.value);
+        const isPre = Boolean(
+          selectedCat?.is_pre_preparation ||
+          selectedCat?.id === 'cat-pre' ||
+          selectedCat?.name.toLowerCase().includes('pré-preparo') ||
+          selectedCat?.name.toLowerCase().includes('subproduto')
+        );
+        if (isPre && isPrePrepCheck) {
+          isPrePrepCheck.checked = true;
+        }
+      });
+
       const updateCalculatedCost = () => {
-        const totalCost = Number(modalSheetIngredients.reduce((sum, item) => sum + (item.cost || 0), 0).toFixed(2));
+        const totalCost = Number(modalSheetIngredients.reduce((sum, item) => sum + (item.calculated_cost || item.cost || 0), 0).toFixed(2));
         const totalWeight = Number(modalSheetIngredients.reduce((sum, item) => sum + (item.gross_weight || item.net_weight || 0), 0).toFixed(3));
 
         const costInput = modalFields.querySelector<HTMLInputElement>('#input-sheet-cost');
@@ -809,20 +920,71 @@ export function createAdminCrudPage(
         }
       };
 
-      const selectIngredientForRow = (rowIndex: number, ingId: string) => {
-        if (!modalSheetIngredients[rowIndex]) return;
-        modalSheetIngredients[rowIndex].ingredient_id = ingId;
-        const targetIng = cachedIngredients.find(x => x.id === ingId) || INITIAL_INGREDIENTS.find(x => x.id === ingId);
-        if (targetIng) {
-          const net = modalSheetIngredients[rowIndex].net_weight || 0;
-          const gross = modalSheetIngredients[rowIndex].gross_weight || 0;
-          const fc = (net > 0 && gross > 0) ? Number((gross / net).toFixed(2)) : 1.0;
-          const cost = Number((gross * (targetIng.cost || 0)).toFixed(2));
-          modalSheetIngredients[rowIndex].correction_factor = fc;
-          modalSheetIngredients[rowIndex].cost = cost;
+      const selectItemForRow = (
+        rowIndex: number,
+        itemData: {
+          source_type: IngredientSourceType;
+          source_id: string;
+          name: string;
+          brand_or_tag?: string;
+          measurement_unity: string;
+          unit_cost: number;
         }
+      ) => {
+        if (!modalSheetIngredients[rowIndex]) return;
+        const current = modalSheetIngredients[rowIndex];
+        current.source_type = itemData.source_type;
+        current.source_id = itemData.source_id;
+        current.ingredient_id = itemData.source_id;
+        current.name = itemData.name;
+        current.brand_or_tag = itemData.brand_or_tag;
+        current.measurement_unity = (itemData.measurement_unity as any) || 'kg';
+        current.unit_cost = itemData.unit_cost;
+
+        const net = current.net_weight || 0;
+        const gross = current.gross_weight || 0;
+        const fc = (net > 0 && gross > 0) ? calculateCorrectionFactor(gross, net) : 1.0;
+        const cost = calculateItemCost(gross, itemData.unit_cost);
+        current.correction_factor = fc;
+        current.calculated_cost = cost;
+        current.cost = cost;
+
         renderSheetIngredients();
         updateCalculatedCost();
+      };
+
+      const selectIngredientForRow = (rowIndex: number, identifier: string) => {
+        if (!modalSheetIngredients[rowIndex]) return;
+        // Tenta encontrar em matéria-prima
+        const targetIng = cachedIngredients.find(x => x.id === identifier || x.name.toLowerCase() === identifier.toLowerCase())
+          || INITIAL_INGREDIENTS.find(x => x.id === identifier || x.name.toLowerCase() === identifier.toLowerCase());
+        if (targetIng) {
+          selectItemForRow(rowIndex, {
+            source_type: 'raw_material',
+            source_id: targetIng.id,
+            name: targetIng.name,
+            brand_or_tag: targetIng.brand || '',
+            measurement_unity: targetIng.measurement_unity,
+            unit_cost: targetIng.cost
+          });
+          return;
+        }
+
+        // Tenta encontrar em subprodutos
+        const targetSub = cachedTechSheets.find(s => s.id === identifier || s.name.toLowerCase() === identifier.toLowerCase() || (s.subproduct_code && s.subproduct_code.toLowerCase() === identifier.toLowerCase()));
+        if (targetSub) {
+          const costPerServing = targetSub.cost_per_serving !== undefined
+            ? targetSub.cost_per_serving
+            : (targetSub.total_yield > 0 ? targetSub.total_yield_cost / targetSub.total_yield : 0);
+          selectItemForRow(rowIndex, {
+            source_type: 'subproduct',
+            source_id: targetSub.id,
+            name: targetSub.name,
+            brand_or_tag: 'Subproduto',
+            measurement_unity: targetSub.total_yield_measurement_unity,
+            unit_cost: costPerServing
+          });
+        }
       };
 
       const renderSheetIngredients = () => {
@@ -832,7 +994,7 @@ export function createAdminCrudPage(
         if (modalSheetIngredients.length === 0) {
           container.innerHTML = `
             <div class="empty-ingredients-notice">
-              <p>Nenhum ingrediente adicionado a esta ficha técnica.</p>
+              <p>Nenhum ingrediente ou subproduto adicionado a esta ficha técnica.</p>
               <div style="display: flex; gap: 8px; flex-wrap: wrap;">
                 <button type="button" id="btn-empty-quick-add" class="btn btn-outline btn-sm">
                   <span class="btn-icon">${ICONS.plus}</span> Novo Insumo no Catálogo
@@ -849,44 +1011,69 @@ export function createAdminCrudPage(
         }
 
         container.innerHTML = modalSheetIngredients.map((item, i) => {
-          const ingId = item.ingredient_id || (item as any).ingredientId || (item as any).id || '';
-          const ing = cachedIngredients.find(x => x.id === ingId)
-            || cachedIngredients.find(x => x.name.toLowerCase() === ingId.toLowerCase())
-            || INITIAL_INGREDIENTS.find(x => x.id === ingId || x.name.toLowerCase() === ingId.toLowerCase());
+          const isSub = item.source_type === 'subproduct';
+          const sourceId = item.source_id || item.ingredient_id || '';
 
-          if (ing && !cachedIngredients.some(c => c.id === ing.id)) {
-            cachedIngredients.push(ing);
+          let ingDisplay = item.name || '';
+          let unit = item.measurement_unity || 'kg';
+
+          if (isSub) {
+            const sub = cachedTechSheets.find(x => x.id === sourceId);
+            if (sub) {
+              ingDisplay = sub.name;
+              unit = sub.total_yield_measurement_unity;
+            }
+          } else {
+            const ing = cachedIngredients.find(x => x.id === sourceId)
+              || cachedIngredients.find(x => x.name.toLowerCase() === sourceId.toLowerCase())
+              || INITIAL_INGREDIENTS.find(x => x.id === sourceId || x.name.toLowerCase() === sourceId.toLowerCase());
+
+            if (ing) {
+              ingDisplay = `${ing.name}${ing.brand ? ` (${ing.brand})` : ''}`;
+              unit = ing.measurement_unity;
+              if (!cachedIngredients.some(c => c.id === ing.id)) {
+                cachedIngredients.push(ing);
+              }
+            }
           }
 
-          const unit = ing ? ing.measurement_unity : ((item as any).unit || 'un');
-          const ingDisplay = ing
-            ? `${ing.name}${ing.brand ? ` (${ing.brand})` : ''}`
-            : ((item as any).name || (item as any).ingredient_name || ingId);
+          if (!ingDisplay && sourceId) {
+            ingDisplay = sourceId;
+          }
 
           const net = item.net_weight !== undefined ? item.net_weight : 0;
           const gross = item.gross_weight !== undefined ? item.gross_weight : 0;
-          const fc = (net > 0 && gross > 0) ? Number((gross / net).toFixed(2)) : (item.correction_factor || 1.0);
+          const fc = (net > 0 && gross > 0) ? calculateCorrectionFactor(gross, net) : (item.correction_factor || 1.0);
+          const costVal = item.calculated_cost !== undefined ? item.calculated_cost : (item.cost || 0);
 
           return `
             <div class="sheet-ing-row" data-index="${i}">
               <div class="sheet-ing-col-name">
-                <label class="form-label-xs">Ingrediente *</label>
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 2px;">
+                  <label class="form-label-xs" style="margin-bottom: 0;">Ingrediente / Subproduto *</label>
+                  ${isSub ? '<span class="badge-subproduct">Subproduto</span>' : ''}
+                </div>
                 <div class="searchable-combobox" data-index="${i}">
-                  <input type="hidden" class="select-row-ing" data-index="${i}" value="${item.ingredient_id || ''}" />
+                  <input type="hidden" class="select-row-ing" data-index="${i}" value="${sourceId}" />
                   <div class="combobox-input-wrapper">
                     <input
                       type="text"
                       class="form-control form-control-sm input-ing-search"
                       data-index="${i}"
-                      placeholder="Buscar ingrediente..."
+                      placeholder="Buscar insumo ou subproduto..."
                       value="${ingDisplay}"
                       autocomplete="off"
                     />
-                    <button type="button" class="btn-combobox-toggle" data-index="${i}" tabindex="-1" title="Ver catálogo de ingredientes">
+                    <button type="button" class="btn-combobox-toggle" data-index="${i}" tabindex="-1" title="Ver catálogo de insumos e subprodutos">
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
                     </button>
                   </div>
                   <div class="combobox-dropdown" data-index="${i}" style="display: none;">
+                    <div class="combobox-tabs" data-index="${i}">
+                      <button type="button" class="combobox-tab-btn active" data-tab="all">Todos</button>
+                      <button type="button" class="combobox-tab-btn" data-tab="raw">Catálogo</button>
+                      <button type="button" class="combobox-tab-btn" data-tab="sub">Subprodutos</button>
+                    </div>
                     <div class="combobox-items-list"></div>
                     <div class="combobox-footer">
                       <button type="button" class="btn-combobox-quick-add" data-index="${i}">
@@ -904,7 +1091,7 @@ export function createAdminCrudPage(
                   min="0"
                   class="form-control form-control-sm input-row-gross"
                   data-index="${i}"
-                  value="${item.gross_weight !== undefined && item.gross_weight > 0 ? item.gross_weight : ''}"
+                  value="${gross > 0 ? gross : ''}"
                   placeholder="0.000"
                 />
               </div>
@@ -916,7 +1103,7 @@ export function createAdminCrudPage(
                   min="0"
                   class="form-control form-control-sm input-row-net"
                   data-index="${i}"
-                  value="${item.net_weight !== undefined && item.net_weight > 0 ? item.net_weight : ''}"
+                  value="${net > 0 ? net : ''}"
                   placeholder="0.000"
                 />
               </div>
@@ -940,7 +1127,7 @@ export function createAdminCrudPage(
                   class="form-control form-control-sm input-row-measure"
                   data-index="${i}"
                   value="${item.homemade_measure || ''}"
-                  placeholder="Ex: 1 xícara"
+                  placeholder="Ex: 1 unidade, 8 colheres sopa"
                 />
               </div>
               <div class="sheet-ing-col-cost">
@@ -950,13 +1137,13 @@ export function createAdminCrudPage(
                   readonly
                   class="form-control form-control-sm input-row-cost"
                   data-index="${i}"
-                  value="R$ ${item.cost !== undefined ? item.cost.toFixed(2) : '0.00'}"
+                  value="R$ ${costVal.toFixed(2)}"
                   style="background: var(--color-surface-container); font-weight: 600;"
                 />
               </div>
               <div class="sheet-ing-col-action">
                 <label class="form-label-xs">&nbsp;</label>
-                <button type="button" class="btn-icon-delete-row" data-index="${i}" title="Remover este ingrediente">
+                <button type="button" class="btn-icon-delete-row" data-index="${i}" title="Remover este item">
                   ${ICONS.close}
                 </button>
               </div>
@@ -964,45 +1151,104 @@ export function createAdminCrudPage(
           `;
         }).join('');
 
-        const updateDropdownList = (dropdown: HTMLElement, query: string, rowIndex: number) => {
+        const updateDropdownList = (dropdown: HTMLElement, query: string, rowIndex: number, currentTab = 'all') => {
           const listEl = dropdown.querySelector<HTMLElement>('.combobox-items-list')!;
           const footerBtn = dropdown.querySelector<HTMLButtonElement>('.btn-combobox-quick-add')!;
           const q = query.toLowerCase().trim();
 
-          const currentSelectedId = modalSheetIngredients[rowIndex]?.ingredient_id;
-          const currentIng = cachedIngredients.find(ci => ci.id === currentSelectedId) || INITIAL_INGREDIENTS.find(ci => ci.id === currentSelectedId);
-          const currentLabel = currentIng ? `${currentIng.name}${currentIng.brand ? ` (${currentIng.brand})` : ''}`.toLowerCase().trim() : '';
+          const currentItem = modalSheetIngredients[rowIndex];
+          const currentSelectedId = currentItem?.source_id || currentItem?.ingredient_id;
+          const currentLabel = (currentItem?.name || '').toLowerCase().trim();
 
-          // Se a busca for vazia ou for o texto do ingrediente já selecionado na linha, exibe o catálogo completo
+          // Subprodutos disponíveis (excluindo ciclos e a própria ficha)
+          const currentSheetId = editingId || itemToEdit?.id;
+          const availableSubs = getAvailableSubproducts(currentSheetId || undefined, cachedTechSheets, cachedCategories);
+
           const isFullList = !q || q === currentLabel;
 
-          const matches = isFullList
-            ? cachedIngredients
-            : cachedIngredients.filter(ci => {
-                const name = ci.name.toLowerCase();
-                const brand = (ci.brand || '').toLowerCase();
-                const fullName = `${name} ${brand} (${brand})`.toLowerCase();
-                return name.includes(q) || brand.includes(q) || fullName.includes(q);
-              });
+          // Filtra ingredientes de catálogo
+          let rawMatches: Ingredient[] = [];
+          if (currentTab === 'all' || currentTab === 'raw') {
+            rawMatches = isFullList
+              ? cachedIngredients
+              : cachedIngredients.filter(ci => {
+                  const name = ci.name.toLowerCase();
+                  const brand = (ci.brand || '').toLowerCase();
+                  return name.includes(q) || brand.includes(q);
+                });
+          }
 
-          if (matches.length === 0) {
-            listEl.innerHTML = `<div class="combobox-empty">Nenhum ingrediente com "${query}".</div>`;
+          // Filtra subprodutos
+          let subMatches: PreparationTechnicalSheet[] = [];
+          if (currentTab === 'all' || currentTab === 'sub') {
+            subMatches = isFullList
+              ? availableSubs
+              : availableSubs.filter(sub => {
+                  const name = sub.name.toLowerCase();
+                  const code = (sub.subproduct_code || '').toLowerCase();
+                  return name.includes(q) || code.includes(q);
+                });
+          }
+
+          const hasAny = rawMatches.length > 0 || subMatches.length > 0;
+
+          if (!hasAny) {
+            listEl.innerHTML = `<div class="combobox-empty">Nenhum item com "${query}".</div>`;
           } else {
-            listEl.innerHTML = matches.map(ci => {
-              const isSelected = ci.id === currentSelectedId;
-              return `
-                <div class="combobox-item ${isSelected ? 'selected' : ''}" data-id="${ci.id}">
-                  <div class="combobox-item-main">
-                    <span class="combobox-item-name">${ci.name}</span>
-                    ${ci.brand ? `<span class="combobox-item-brand">${ci.brand}</span>` : ''}
+            let html = '';
+
+            // Renderiza subprodutos
+            if (subMatches.length > 0) {
+              if (currentTab === 'all') {
+                html += `<div style="padding: 4px 10px; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; color: var(--color-primary); background: var(--color-surface-container);">Subprodutos / Pré-preparos (${subMatches.length})</div>`;
+              }
+              html += subMatches.map(sub => {
+                const isSelected = sub.id === currentSelectedId && currentItem?.source_type === 'subproduct';
+                const costPerServing = sub.cost_per_serving !== undefined
+                  ? sub.cost_per_serving
+                  : (sub.total_yield > 0 ? sub.total_yield_cost / sub.total_yield : 0);
+
+                return `
+                  <div class="combobox-item ${isSelected ? 'selected' : ''}" data-type="subproduct" data-id="${sub.id}">
+                    <div class="combobox-item-main">
+                      <div style="display: flex; align-items: center; gap: 6px;">
+                        <span class="combobox-item-name">${sub.name}</span>
+                        <span class="badge-subproduct">Subproduto</span>
+                      </div>
+                      <span class="combobox-item-brand">${sub.subproduct_code || 'Base de Preparo'}</span>
+                    </div>
+                    <div class="combobox-item-meta">
+                      <span class="badge-unit">${sub.total_yield_measurement_unity}</span>
+                      <span class="badge-cost">R$ ${costPerServing.toFixed(2)}</span>
+                    </div>
                   </div>
-                  <div class="combobox-item-meta">
-                    <span class="badge-unit">${ci.measurement_unity}</span>
-                    <span class="badge-cost">R$ ${ci.cost.toFixed(2)}</span>
+                `;
+              }).join('');
+            }
+
+            // Renderiza insumos de compra
+            if (rawMatches.length > 0) {
+              if (currentTab === 'all' && subMatches.length > 0) {
+                html += `<div style="padding: 4px 10px; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; color: var(--color-on-surface-variant); background: var(--color-surface-container);">Insumos de Catálogo (${rawMatches.length})</div>`;
+              }
+              html += rawMatches.map(ci => {
+                const isSelected = ci.id === currentSelectedId && currentItem?.source_type !== 'subproduct';
+                return `
+                  <div class="combobox-item ${isSelected ? 'selected' : ''}" data-type="raw_material" data-id="${ci.id}">
+                    <div class="combobox-item-main">
+                      <span class="combobox-item-name">${ci.name}</span>
+                      ${ci.brand ? `<span class="combobox-item-brand">${ci.brand}</span>` : ''}
+                    </div>
+                    <div class="combobox-item-meta">
+                      <span class="badge-unit">${ci.measurement_unity}</span>
+                      <span class="badge-cost">R$ ${ci.cost.toFixed(2)}</span>
+                    </div>
                   </div>
-                </div>
-              `;
-            }).join('');
+                `;
+              }).join('');
+            }
+
+            listEl.innerHTML = html;
 
             const selectedItemEl = listEl.querySelector<HTMLElement>('.combobox-item.selected');
             if (selectedItemEl && typeof selectedItemEl.scrollIntoView === 'function') {
@@ -1019,8 +1265,37 @@ export function createAdminCrudPage(
           listEl.querySelectorAll<HTMLElement>('.combobox-item').forEach(itemEl => {
             itemEl.addEventListener('click', (e) => {
               e.stopPropagation();
-              const ingId = itemEl.getAttribute('data-id')!;
-              selectIngredientForRow(rowIndex, ingId);
+              const itemType = itemEl.getAttribute('data-type') as IngredientSourceType;
+              const itemId = itemEl.getAttribute('data-id')!;
+
+              if (itemType === 'subproduct') {
+                const sub = availableSubs.find(s => s.id === itemId);
+                if (sub) {
+                  const costPerServing = sub.cost_per_serving !== undefined
+                    ? sub.cost_per_serving
+                    : (sub.total_yield > 0 ? sub.total_yield_cost / sub.total_yield : 0);
+                  selectItemForRow(rowIndex, {
+                    source_type: 'subproduct',
+                    source_id: sub.id,
+                    name: sub.name,
+                    brand_or_tag: 'Subproduto',
+                    measurement_unity: sub.total_yield_measurement_unity,
+                    unit_cost: costPerServing
+                  });
+                }
+              } else {
+                const ci = cachedIngredients.find(x => x.id === itemId);
+                if (ci) {
+                  selectItemForRow(rowIndex, {
+                    source_type: 'raw_material',
+                    source_id: ci.id,
+                    name: ci.name,
+                    brand_or_tag: ci.brand || '',
+                    measurement_unity: ci.measurement_unity,
+                    unit_cost: ci.cost
+                  });
+                }
+              }
               dropdown.style.display = 'none';
             });
           });
@@ -1032,16 +1307,28 @@ export function createAdminCrudPage(
           });
         };
 
-        container.querySelectorAll<HTMLInputElement>('.input-ing-search').forEach(searchInp => {
-          const rowIndex = Number(searchInp.getAttribute('data-index'));
-          const combobox = searchInp.closest('.searchable-combobox')!;
+        container.querySelectorAll<HTMLElement>('.searchable-combobox').forEach(combobox => {
+          const rowIndex = Number(combobox.getAttribute('data-index'));
+          const searchInp = combobox.querySelector<HTMLInputElement>('.input-ing-search')!;
           const dropdown = combobox.querySelector<HTMLElement>('.combobox-dropdown')!;
+          let activeTab = 'all';
 
           const openDropdown = (showAll = false) => {
             closeAllDropdowns();
-            updateDropdownList(dropdown, showAll ? '' : searchInp.value, rowIndex);
+            updateDropdownList(dropdown, showAll ? '' : searchInp.value, rowIndex, activeTab);
             dropdown.style.display = 'block';
           };
+
+          // Abas do combobox
+          dropdown.querySelectorAll<HTMLButtonElement>('.combobox-tab-btn').forEach(tabBtn => {
+            tabBtn.addEventListener('click', (e) => {
+              e.stopPropagation();
+              dropdown.querySelectorAll('.combobox-tab-btn').forEach(b => b.classList.remove('active'));
+              tabBtn.classList.add('active');
+              activeTab = tabBtn.getAttribute('data-tab') || 'all';
+              updateDropdownList(dropdown, searchInp.value, rowIndex, activeTab);
+            });
+          });
 
           searchInp.addEventListener('focus', () => {
             searchInp.select();
@@ -1056,7 +1343,7 @@ export function createAdminCrudPage(
           });
 
           searchInp.addEventListener('input', () => {
-            updateDropdownList(dropdown, searchInp.value, rowIndex);
+            updateDropdownList(dropdown, searchInp.value, rowIndex, activeTab);
             dropdown.style.display = 'block';
           });
 
@@ -1092,12 +1379,19 @@ export function createAdminCrudPage(
           if (!(e.target as HTMLElement).closest('.searchable-combobox')) {
             container.querySelectorAll<HTMLInputElement>('.input-ing-search').forEach(inp => {
               const rIdx = Number(inp.getAttribute('data-index'));
-              const selId = modalSheetIngredients[rIdx]?.ingredient_id;
-              const ingObj = cachedIngredients.find(ci => ci.id === selId) || INITIAL_INGREDIENTS.find(ci => ci.id === selId);
-              if (ingObj) {
-                inp.value = `${ingObj.name}${ingObj.brand ? ` (${ingObj.brand})` : ''}`;
-              } else if (!selId) {
-                inp.value = '';
+              const itm = modalSheetIngredients[rIdx];
+              if (itm) {
+                if (itm.source_type === 'subproduct') {
+                  inp.value = itm.name || '';
+                } else {
+                  const selId = itm.source_id || itm.ingredient_id;
+                  const ingObj = cachedIngredients.find(ci => ci.id === selId) || INITIAL_INGREDIENTS.find(ci => ci.id === selId);
+                  if (ingObj) {
+                    inp.value = `${ingObj.name}${ingObj.brand ? ` (${ingObj.brand})` : ''}`;
+                  } else if (!selId) {
+                    inp.value = '';
+                  }
+                }
               }
             });
             closeAllDropdowns();
@@ -1113,12 +1407,12 @@ export function createAdminCrudPage(
             const grossVal = parseNumber((e.target as HTMLInputElement).value, 0);
             modalSheetIngredients[idx].gross_weight = grossVal;
 
-            const targetIng = cachedIngredients.find(x => x.id === modalSheetIngredients[idx].ingredient_id) || INITIAL_INGREDIENTS.find(x => x.id === modalSheetIngredients[idx].ingredient_id);
-            const unitCost = targetIng ? targetIng.cost : 0;
+            const unitCost = modalSheetIngredients[idx].unit_cost || 0;
             const netVal = modalSheetIngredients[idx].net_weight || 0;
-            const fc = (netVal > 0 && grossVal > 0) ? Number((grossVal / netVal).toFixed(2)) : 1.0;
+            const fc = (netVal > 0 && grossVal > 0) ? calculateCorrectionFactor(grossVal, netVal) : 1.0;
             modalSheetIngredients[idx].correction_factor = fc;
-            const cost = Number((grossVal * unitCost).toFixed(2));
+            const cost = calculateItemCost(grossVal, unitCost);
+            modalSheetIngredients[idx].calculated_cost = cost;
             modalSheetIngredients[idx].cost = cost;
 
             const rowEl = container.querySelector(`.sheet-ing-row[data-index="${idx}"]`);
@@ -1139,7 +1433,7 @@ export function createAdminCrudPage(
             modalSheetIngredients[idx].net_weight = netVal;
 
             const grossVal = modalSheetIngredients[idx].gross_weight || 0;
-            const fc = (netVal > 0 && grossVal > 0) ? Number((grossVal / netVal).toFixed(2)) : 1.0;
+            const fc = (netVal > 0 && grossVal > 0) ? calculateCorrectionFactor(grossVal, netVal) : 1.0;
             modalSheetIngredients[idx].correction_factor = fc;
 
             const rowEl = container.querySelector(`.sheet-ing-row[data-index="${idx}"]`);
@@ -1173,9 +1467,17 @@ export function createAdminCrudPage(
 
       const addIngredientRow = () => {
         modalSheetIngredients.push({
+          id: `item-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`,
+          source_type: 'raw_material',
+          source_id: '',
           ingredient_id: '',
+          name: '',
+          measurement_unity: 'kg',
           net_weight: 1.0,
           gross_weight: 0,
+          correction_factor: 1.0,
+          unit_cost: 0,
+          calculated_cost: 0,
           homemade_measure: '',
           cost: 0
         });
@@ -1311,25 +1613,59 @@ export function createAdminCrudPage(
       } else if (isTechSheet) {
         const name = (content.querySelector<HTMLInputElement>('#input-sheet-name')!).value.trim();
         const dish_category_id = (content.querySelector<HTMLSelectElement>('#select-sheet-cat')!).value;
+        const is_pre_preparation = Boolean(content.querySelector<HTMLInputElement>('#check-sheet-is-pre-prep')?.checked);
+        const subproduct_code = is_pre_preparation
+          ? (name.toLowerCase().startsWith('sb ') ? name : `SB ${name}`)
+          : undefined;
         const total_yield = parseNumber((content.querySelector<HTMLInputElement>('#input-sheet-yield')!).value, 1);
         const total_yield_measurement_unity = (content.querySelector<HTMLInputElement>('#input-sheet-yield-unit')!).value.trim() || 'porções';
         const total_yield_weight = parseNumber((content.querySelector<HTMLInputElement>('#input-sheet-weight')!).value, 0);
 
         // Processa ingredientes da ficha técnica
-        const ingredients: TechnicalSheetIngredient[] = modalSheetIngredients
-          .filter(it => it.ingredient_id)
-          .map(it => ({
-            ingredient_id: it.ingredient_id,
-            gross_weight: parseNumber(it.gross_weight, 0),
-            net_weight: parseNumber(it.net_weight, 0),
-            homemade_measure: it.homemade_measure ? it.homemade_measure.trim() : '',
-            cost: parseNumber(it.cost, 0)
-          }));
+        const ingredients: TechnicalSheetIngredientItem[] = modalSheetIngredients
+          .filter(it => it.source_id || it.ingredient_id)
+          .map(it => {
+            const gross = parseNumber(it.gross_weight, 0);
+            const net = parseNumber(it.net_weight, 0);
+            const fc = (net > 0 && gross > 0) ? calculateCorrectionFactor(gross, net) : (it.correction_factor || 1.0);
+            const unit_cost = Number(it.unit_cost) || 0;
+            const calculated_cost = calculateItemCost(gross, unit_cost);
 
-        // O Custo Calculado é a soma exata do cálculo de cada ingrediente
+            return {
+              id: it.id || `item-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`,
+              source_type: it.source_type || 'raw_material',
+              source_id: it.source_id || it.ingredient_id || '',
+              ingredient_id: it.source_id || it.ingredient_id || '',
+              name: it.name || '',
+              brand_or_tag: it.brand_or_tag || (it.source_type === 'subproduct' ? 'Subproduto' : ''),
+              measurement_unity: it.measurement_unity || 'kg',
+              gross_weight: gross,
+              net_weight: net,
+              correction_factor: fc,
+              unit_cost,
+              calculated_cost,
+              cost: calculated_cost,
+              homemade_measure: it.homemade_measure ? it.homemade_measure.trim() : ''
+            };
+          });
+
+        // Prevenção de ciclos se for um pré-preparo
+        if (is_pre_preparation) {
+          for (const itm of ingredients) {
+            if (itm.source_type === 'subproduct' && itm.source_id) {
+              if (hasCycle(id, itm.source_id, cachedTechSheets)) {
+                throw new Error(`Dependência cíclica detectada: O pré-preparo "${name}" não pode incluir o subproduto "${itm.name}".`);
+              }
+            }
+          }
+        }
+
+        const total_gross_weight = Number(ingredients.reduce((sum, it) => sum + (it.gross_weight || 0), 0).toFixed(3));
+        const total_net_weight = Number(ingredients.reduce((sum, it) => sum + (it.net_weight || 0), 0).toFixed(3));
         const total_yield_cost = Number(
-          ingredients.reduce((sum, it) => sum + (it.cost || 0), 0).toFixed(2)
+          ingredients.reduce((sum, it) => sum + (it.calculated_cost || it.cost || 0), 0).toFixed(2)
         );
+        const cost_per_serving = total_yield > 0 ? Number((total_yield_cost / total_yield).toFixed(2)) : 0;
 
         const methodText = (content.querySelector<HTMLTextAreaElement>('#textarea-sheet-method')!).value;
         const preparation_method = methodText.split('\n').map(l => l.trim()).filter(Boolean);
@@ -1339,15 +1675,45 @@ export function createAdminCrudPage(
           tenantId: targetTenantId,
           name,
           dish_category_id,
+          is_pre_preparation,
+          subproduct_code,
           ingredients,
           preparation_method,
+          total_gross_weight,
+          total_net_weight,
           total_yield,
           total_yield_measurement_unity,
-          total_yield_weight,
-          total_yield_cost
+          total_yield_weight: total_yield_weight || total_gross_weight,
+          total_yield_cost,
+          cost_per_serving
         };
+
         await sheetRepo.save(sheet);
-        showToast('✓ Ficha técnica salva no Cloud Firestore com sucesso!');
+
+        // Atualiza cachedTechSheets imediatamente na memória
+        const existingIdx = cachedTechSheets.findIndex(s => s.id === sheet.id);
+        if (existingIdx >= 0) {
+          cachedTechSheets[existingIdx] = sheet;
+        } else {
+          cachedTechSheets.push(sheet);
+        }
+
+        // Se for pré-preparo, propaga o novo custo para as fichas que o utilizam
+        let cascadedSheets: PreparationTechnicalSheet[] = [];
+        if (is_pre_preparation) {
+          cascadedSheets = propagateSubproductCostUpdate(sheet, cachedTechSheets, cachedIngredients);
+          for (const cascaded of cascadedSheets) {
+            await sheetRepo.save(cascaded);
+            const cIdx = cachedTechSheets.findIndex(s => s.id === cascaded.id);
+            if (cIdx >= 0) cachedTechSheets[cIdx] = cascaded;
+            else cachedTechSheets.push(cascaded);
+          }
+        }
+
+        const msg = cascadedSheets.length > 0
+          ? `✓ Ficha técnica salva no Cloud Firestore com sucesso! (${cascadedSheets.length} ficha(s) dependente(s) recalculada(s))`
+          : '✓ Ficha técnica salva no Cloud Firestore com sucesso!';
+        showToast(msg);
       } else if (isDish) {
         const name = (content.querySelector<HTMLInputElement>('#input-dish-name')!).value.trim();
         const checkedBoxes = content.querySelectorAll<HTMLInputElement>('input[name="dish_sheet_id"]:checked');
@@ -1485,7 +1851,6 @@ export function createAdminCrudPage(
     } else if (isTechSheet) {
       thead.innerHTML = `
         <tr>
-          <th>Código</th>
           <th>Nome da Preparação</th>
           <th>Categoria</th>
           <th>Rendimento</th>
@@ -1505,8 +1870,10 @@ export function createAdminCrudPage(
 
         const tr = document.createElement('tr');
         tr.innerHTML = `
-          <td><code>${sheet.id}</code></td>
-          <td><strong>${sheet.name}</strong></td>
+          <td>
+            <strong>${sheet.name}</strong>
+            ${sheet.is_pre_preparation ? `<span class="badge-subproduct" style="margin-left: 6px;">${sheet.subproduct_code || 'Pré-preparo'}</span>` : ''}
+          </td>
           <td><span class="category-tag">${catName}</span></td>
           <td>${sheet.total_yield} ${sheet.total_yield_measurement_unity}</td>
           <td>
@@ -1700,6 +2067,7 @@ export function createAdminCrudPage(
           });
         }
         currentItems = sheets;
+        cachedTechSheets = sheets;
       } else if (isDish) {
         // Carrega fichas técnicas para os checkboxes
         cachedTechSheets = await sheetRepo.listByTenant(tenantId);
@@ -1725,6 +2093,7 @@ export function createAdminCrudPage(
         cachedCategories = INITIAL_CATEGORIES.map(c => ({ ...c, tenantId }));
         cachedIngredients = INITIAL_INGREDIENTS.map(i => ({ ...i, tenantId }));
         currentItems = INITIAL_TECHNICAL_SHEETS.map(s => ({ ...s, tenantId }));
+        cachedTechSheets = currentItems;
       }
       if (isDish) currentItems = INITIAL_DISHES.map(d => ({ ...d, tenantId }));
       loadingEl.style.display = 'none';

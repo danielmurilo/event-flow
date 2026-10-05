@@ -41,7 +41,8 @@ export class FirestoreCategoryRepository implements ICategoryRepository {
       categories.push({
         id: docSnap.id,
         tenantId: data.tenantId,
-        name: data.name || ''
+        name: data.name || '',
+        is_pre_preparation: Boolean(data.is_pre_preparation)
       });
     });
 
@@ -59,7 +60,8 @@ export class FirestoreCategoryRepository implements ICategoryRepository {
     return {
       id: snap.id,
       tenantId: data.tenantId,
-      name: data.name || ''
+      name: data.name || '',
+      is_pre_preparation: Boolean(data.is_pre_preparation)
     };
   }
 
@@ -71,7 +73,8 @@ export class FirestoreCategoryRepository implements ICategoryRepository {
     const docRef = doc(this.db, 'dish_categories', category.id);
     await setDoc(docRef, {
       tenantId: category.tenantId,
-      name: category.name
+      name: category.name,
+      is_pre_preparation: Boolean(category.is_pre_preparation)
     }, { merge: true });
   }
 
